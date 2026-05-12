@@ -4,39 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - User</title>
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3198/3198336.png">
     <style>
         body { font-family: sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
         .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
         input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
         .btn { background: #e67e22; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 18px; cursor: pointer; font-weight: bold; }
-        #status-msg { margin-top: 20px; font-weight: bold; color: #27ae60; display: none; padding: 15px; border: 2px dashed #27ae60; }
+        #msg { color: green; margin-top: 15px; font-weight: bold; display: none; }
     </style>
 </head>
 <body>
-    <div class="container" id="main-ui">
+    <div class="container">
         <h2 style="color: #2c3e50;">Village Ride 🚕</h2>
         <p>మీ ప్రయాణ వివరాలు తెలపండి</p>
         <input type="text" id="pickup" placeholder="ఎక్కడ నుండి? (Pickup)">
         <input type="text" id="drop" placeholder="ఎక్కడికి? (Drop)">
         <button class="btn" onclick="bookRide()">బండి బుక్ చేయండి</button>
-        <div id="status-msg">డ్రైవర్ మీ రైడ్‌ను అంగీకరించారు! బండి వస్తోంది... 🚕</div>
+        <p id="msg">రిక్వెస్ట్ పంపబడింది! డ్రైవర్ కోసం వేచి ఉండండి.</p>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
-  authDomain: "village-ride-e139b.firebaseapp.com",
-  projectId: "village-ride-e139b",
-  storageBucket: "village-ride-e139b.firebasestorage.app",
-  messagingSenderId: "869545503903",
-  appId: "1:869545503903:web:35efe840f51f382ecf86aa",
-  measurementId: "G-N23Y5LCWD0"
-};
+        // మీరు పంపిన వివరాలే ఇక్కడ పెట్టాను
+        const firebaseConfig = {
+            apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+            authDomain: "village-ride-e139b.firebaseapp.com",
+            projectId: "village-ride-e139b",
+            storageBucket: "village-ride-e139b.firebasestorage.app",
+            messagingSenderId: "869545503903",
+            appId: "1:869545503903:web:35efe840f51f382ecf86aa",
+            measurementId: "G-N23Y5LCWD0"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -44,28 +43,31 @@ const firebaseConfig = {
         window.bookRide = async () => {
             const p = document.getElementById('pickup').value;
             const d = document.getElementById('drop').value;
-            if(!p || !d) { alert("ఊర్ల పేర్లు రాయండి"); return; }
+
+            if(!p || !d) { 
+                alert("దయచేసి ఊర్ల పేర్లు రాయండి"); 
+                return; 
+            }
 
             try {
-                const docRef = await addDoc(collection(db, "rides"), {
+                // డేటాను పంపే భాగం
+                await addDoc(collection(db, "rides"), {
                     pickup: p,
                     drop: d,
                     status: "pending",
                     timestamp: Date.now()
                 });
-
-                alert("రిక్వెస్ట్ పంపబడింది! డ్రైవర్ కోసం వేచి చూడండి.");
-
-                // ఇక్కడ 'Listen' చేస్తాం - స్టేటస్ మారగానే యూజర్‌కి తెలుస్తుంది
-                onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
-                    if (docSnap.exists() && docSnap.data().status === "accepted") {
-                        document.getElementById('status-msg').style.display = 'block';
-                        alert("డ్రైవర్ రైడ్‌ను అంగీకరించారు! 🚕");
-                    }
-                });
-            } catch (e) { alert("Error: " + e.message); }
+                
+                document.getElementById('msg').style.display = 'block';
+                alert("సక్సెస్! మీ రిక్వెస్ట్ డ్రైవర్‌కి చేరింది.");
+                
+                document.getElementById('pickup').value = "";
+                document.getElementById('drop').value = "";
+            } catch (e) {
+                alert("క్షమించండి! డేటా వెళ్లడం లేదు: " + e.message);
+                console.error(e);
+            }
         };
     </script>
 </body>
 </html>
-
