@@ -41,7 +41,7 @@ const firebaseConfig = {
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const q = query(collection(db, "rides"), orderBy("time", "desc"));
+        const q = collection(db, "rides");
 
         onSnapshot(q, (snapshot) => {
             const list = document.getElementById('rides-list');
