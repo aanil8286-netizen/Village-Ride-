@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Ride - Captain</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3198/3198336.png">
+    <style>
+        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 400px; text-align: left; position: relative; }
+        .accept-btn { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>Captain Dashboard 👨‍✈️</h2>
+    <div id="rides-list">కొత్త రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+  authDomain: "village-ride-e139b.firebaseapp.com",
+  projectId: "village-ride-e139b",
+  storageBucket: "village-ride-e139b.firebasestorage.app",
+  messagingSenderId: "869545503903",
+  appId: "1:869545503903:web:35efe840f51f382ecf86aa",
+  measurementId: "G-N23Y5LCWD0"
+};
+        const firebaseConfig = {
+            apiKey: "మీ_API_KEY",
+            authDomain: "మీ_PROJECT_ID.firebaseapp.com",
+            projectId: "మీ_PROJECT_ID",
+            storageBucket: "మీ_PROJECT_ID.appspot.com",
+            messagingSenderId: "మీ_SENDER_ID",
+            appId: "మీ_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const q = query(collection(db, "rides"), orderBy("time", "desc"));
+
+        onSnapshot(q, (snapshot) => {
+            const list = document.getElementById('rides-list');
+            if (snapshot.empty) {
+                list.innerHTML = "ప్రస్తుతానికి రైడ్స్ ఏవీ లేవు.";
+                return;
+            }
+            
+            let html = "";
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                html += `
+                    <div class="ride-card">
+                        <p>📍 <b>Pickup:</b> ${data.pickup}</p>
+                        <p>🏁 <b>Drop:</b> ${data.drop}</p>
+                        <button class="accept-btn" onclick="alert('రైడ్ కన్ఫర్మ్ చేయబడింది!')">Accept Ride</button>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        });
+    </script>
+</body>
+</html>
