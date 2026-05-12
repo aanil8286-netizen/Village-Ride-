@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Ride - గ్రామీణ రవాణా</title>
+    <style>
+        :root { --primary: #f1c40f; --dark: #2c3e50; --light: #f4f4f4; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--light); margin: 0; padding: 15px; }
+        .app-container { max-width: 450px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--dark); color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
+        
+        label { font-weight: bold; display: block; margin-top: 15px; color: var(--dark); }
+        input { width: 100%; padding: 12px; margin-top: 8px; border: 2px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn-book { width: 100%; padding: 15px; background-color: var(--primary); border: none; border-radius: 10px; font-weight: bold; font-size: 18px; margin-top: 25px; cursor: pointer; transition: 0.3s; }
+        .btn-book:hover { background-color: #d4ac0d; }
+        
+        /* Driver Alert Style */
+        #ride-alert { display: none; background: #fff3cd; border: 2px dashed #856404; padding: 15px; border-radius: 10px; margin-top: 20px; color: #856404; }
+        .status { margin-top: 15px; text-align: center; color: green; font-weight: bold; display: none; }
+        
+        .footer-note { font-size: 12px; text-align: center; color: #777; margin-top: 20px; padding: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h2 style="margin:0;">Village Ride 🏍️</h2>
+        <small>మన ఊరి సొంత రవాణా యాప్</small>
+    </div>
+
+    <div class="content">
+        <!-- USER INTERFACE -->
+        <div id="user-view">
+            <label>మీ ఊరు / Pickup Village:</label>
+            <input type="text" id="pickup" placeholder="ఉదా: బషీరాబాద్">
+
+            <label>మీరు వెళ్లవలసిన ఊరు / Destination:</label>
+            <input type="text" id="drop" placeholder="ఉదా: రైల్వే స్టేషన్">
+
+            <button class="btn-book" onclick="bookRide()">బండి బుక్ చేయండి (Book Ride)</button>
+            <div id="status" class="status">రిక్వెస్ట్ పంపబడింది... వెతుకుతున్నాము.</div>
+        </div>
+
+        <hr style="margin: 30px 0; opacity: 0.2;">
+
+        <!-- DRIVER INTERFACE (This part only for Captains) -->
+        <div id="driver-view">
+            <h4 style="color: var(--dark); margin: 0;">Captain Dashboard</h4>
+            <div id="ride-alert">
+                <strong>కొత్త రైడ్ రిక్వెస్ట్! 🔔</strong>
+                <p id="ride-details" style="margin: 5px 0;"></p>
+                <button onclick="acceptRide()" style="background: green; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%;">అంగీకరించు (Accept)</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        Teacher M. Anil Kumar గారి ఆలోచనతో.. గ్రామీణ అభివృద్ధి కోసం.
+    </div>
+</div>
+
+<!-- FIREBASE CONNECTION -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+  authDomain: "village-ride-e139b.firebaseapp.com",
+  projectId: "village-ride-e139b",
+  storageBucket: "village-ride-e139b.firebasestorage.app",
+  messagingSenderId: "869545503903",
+  appId: "1:869545503903:web:35efe840f51f382ecf86aa",
+  measurementId: "G-N23Y5LCWD0"
+};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // బుకింగ్ ఫంక్షన్
+    window.bookRide = async function() {
+        const p = document.getElementById('pickup').value;
+        const d = document.getElementById('drop').value;
+
+        if(!p || !d) { alert("దయచేసి వివరాలు నింపండి"); return; }
+
+        try {
+            await addDoc(collection(db, "rides"), {
+                pickup: p,
+                drop: d,
+                status: "pending",
+                time: new Date()
+            });
+            document.getElementById('status').style.display = 'block';
+        } catch (e) {
+            alert("Error: " + e.message);
+        }
+    };
+
+    // కొత్త రైడ్స్ కోసం వెతకడం (Driver Side)
+    const q = query(collection(db, "rides"), where("status", "==", "pending"));
+    onSnapshot(q, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const data = change.doc.data();
+                document.getElementById('ride-alert').style.display = 'block';
+                document.getElementById('ride-details').innerText = data.pickup + " నుండి " + data.drop + " కి.";
+                
+                // శబ్దం రావడానికి (Optional)
+                let audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.play();
+            }
+        });
+    });
+
+    window.acceptRide = function() {
+        alert("రైడ్ అంగీకరించబడింది! ప్రయాణికుడికి సమాచారం వెళ్తుంది.");
+        document.getElementById('ride-alert').style.display = 'none';
+    };
+</script>
+
+</body>
+</html>
