@@ -29,16 +29,8 @@ const firebaseConfig = {
   appId: "1:869545503903:web:35efe840f51f382ecf86aa",
   measurementId: "G-N23Y5LCWD0"
 };
-        const firebaseConfig = {
-            apiKey: "మీ_API_KEY",
-            authDomain: "మీ_PROJECT_ID.firebaseapp.com",
-            projectId: "మీ_PROJECT_ID",
-            storageBucket: "మీ_PROJECT_ID.appspot.com",
-            messagingSenderId: "మీ_SENDER_ID",
-            appId: "మీ_APP_ID"
-        };
 
-        const app = initializeApp(firebaseConfig);
+     const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         const q = collection(db, "rides");
