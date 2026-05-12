@@ -38,7 +38,7 @@ const firebaseConfig = {
  };
         const db = getFirestore(initializeApp(firebaseConfig));
 
-        const q = query(collection(db, "rides"), where("status", "==", "pending"));
+        const q = collection(db, "rides");
         onSnapshot(q, (snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === "added") {
