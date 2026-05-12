@@ -1,56 +1,65 @@
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <title>Village Ride - Captain</title>
+</head>
+<body style="background:#2c3e50; color:white; font-family:sans-serif; text-align:center; padding:20px;">
 
-    // మీ వివరాలతో సరిచేసిన కాన్ఫిగరేషన్
-    const firebaseConfig = {
-        apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
-        authDomain: "village-ride-e139b.firebaseapp.com",
-        projectId: "village-ride-e139b",
-        storageBucket: "village-ride-e139b.firebasestorage.app",
-        messagingSenderId: "869545503903",
-        appId: "1:869545503903:web:35efe840f51f382ecf86aa",
-        measurementId: "G-N23Y5LCWD0"
-    };
+    <h2>Captain Dashboard 👨‍✈️</h2>
+    <div id="rides-list">లోడ్ అవుతోంది...</div>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // డేటాను తీసుకురావడం
-    onSnapshot(collection(db, "rides"), (snapshot) => {
-        const list = document.getElementById('rides-list');
-        let html = "";
-        
-        if (snapshot.empty) {
-            list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ లేవు.";
-            return;
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+            authDomain: "village-ride-e139b.firebaseapp.com",
+            projectId: "village-ride-e139b",
+            storageBucket: "village-ride-e139b.firebasestorage.app",
+            messagingSenderId: "869545503903",
+            appId: "1:869545503903:web:35efe840f51f382ecf86aa",
+            measurementId: "G-N23Y5LCWD0"
+        };
 
-        snapshot.forEach((documentSnap) => {
-            const data = documentSnap.data();
-            const id = documentSnap.id;
-            const isAccepted = data.status === "accepted";
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        onSnapshot(collection(db, "rides"), (snapshot) => {
+            const list = document.getElementById('rides-list');
+            let html = "";
             
-            html += `
-                <div class="ride-card" style="background:white; color:black; padding:15px; margin:15px auto; border-radius:10px; text-align:left; max-width:350px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                    <p>📍 <b>నుండి:</b> ${data.pickup || 'తెలియదు'}</p>
-                    <p>🏁 <b>కి:</b> ${data.drop || 'తెలియదు'}</p>
-                    <p style="color: ${isAccepted ? 'blue' : 'orange'}">స్థితి: ${data.status}</p>
-                    <button class="btn" style="background:${isAccepted ? 'gray' : '#27ae60'}; color:white; padding:12px; width:100%; border:none; border-radius:5px; cursor:pointer; font-weight:bold;" 
-                            onclick="${isAccepted ? "alert('ఇది ఆల్రెడీ అంగీకరించబడింది')" : `acceptRide('${id}')`}">
-                        ${isAccepted ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}
-                    </button>
-                </div>`;
-        });
-        list.innerHTML = html;
-    });
+            if (snapshot.empty) {
+                list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ ఏమీ లేవు.";
+                return;
+            }
 
-    window.acceptRide = async (id) => {
-        try {
-            await updateDoc(doc(db, "rides", id), { status: "accepted" });
-            alert("రైడ్ కన్ఫర్మ్ అయ్యింది!");
-        } catch (e) { 
-            alert("Error: " + e.message); 
-        }
-    };
-</script>
+            snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const id = docSnap.id;
+                const isAccepted = data.status === "accepted";
+                
+                html += `
+                    <div style="background:white; color:black; padding:15px; margin:10px auto; border-radius:10px; max-width:300px; text-align:left;">
+                        <p>📍 <b>నుండి:</b> ${data.pickup || 'N/A'}</p>
+                        <p>🏁 <b>కి:</b> ${data.drop || 'N/A'}</p>
+                        <button style="width:100%; padding:10px; background:${isAccepted ? '#ccc' : '#27ae60'}; color:white; border:none; cursor:pointer;" 
+                                onclick="window.acceptRide('${id}')" ${isAccepted ? 'disabled' : ''}>
+                            ${isAccepted ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}
+                        </button>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        });
+
+        window.acceptRide = async (id) => {
+            try {
+                await updateDoc(doc(db, "rides", id), { status: "accepted" });
+                alert("రైడ్ కన్ఫర్మ్ అయ్యింది!");
+            } catch (e) { alert("Error: " + e.message); }
+        };
+    </script>
+</body>
+</html>
+
