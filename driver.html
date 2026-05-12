@@ -2,12 +2,17 @@
 <html lang="te">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
+    <style>
+        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
+        .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 400px; text-align: left; border-left: 5px solid #f1c40f; }
+        .btn { background: #27ae60; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    </style>
 </head>
-<body style="background:#2c3e50; color:white; font-family:sans-serif; text-align:center; padding:20px;">
-
+<body>
     <h2>Captain Dashboard 👨‍✈️</h2>
-    <div id="rides-list">లోడ్ అవుతోంది...</div>
+    <div id="rides-list">కొత్త రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -26,40 +31,46 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const q=collection(db, "rides"), (snapshot) => {
+        // అతి సులభమైన పద్ధతిలో డేటా తెప్పించడం
+        onSnapshot(collection(db, "rides"), (snapshot) => {
             const list = document.getElementById('rides-list');
-            let html = "";
             
             if (snapshot.empty) {
                 list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ ఏమీ లేవు.";
                 return;
             }
-
-            snapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                const id = docSnap.id;
+            
+            let html = "";
+            snapshot.forEach((documentSnap) => {
+                const data = documentSnap.data();
+                const id = documentSnap.id;
                 const isAccepted = data.status === "accepted";
                 
                 html += `
-                    <div style="background:white; color:black; padding:15px; margin:10px auto; border-radius:10px; max-width:300px; text-align:left;">
-                        <p>📍 <b>నుండి:</b> ${data.pickup || 'N/A'}</p>
-                        <p>🏁 <b>కి:</b> ${data.drop || 'N/A'}</p>
-                        <button style="width:100%; padding:10px; background:${isAccepted ? '#ccc' : '#27ae60'}; color:white; border:none; cursor:pointer;" 
-                                onclick="window.acceptRide('${id}')" ${isAccepted ? 'disabled' : ''}>
+                    <div class="ride-card">
+                        <p>📍 <b>నుండి:</b> ${data.pickup}</p>
+                        <p>🏁 <b>కి:</b> ${data.drop}</p>
+                        <button class="btn" style="background:${isAccepted ? '#95a5a6' : '#27ae60'}" 
+                                onclick="window.acceptRide('${id}', '${isAccepted}')">
                             ${isAccepted ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}
                         </button>
                     </div>`;
             });
             list.innerHTML = html;
+        }, (error) => {
+            // ఒకవేళ ఏదైనా ప్రాబ్లం ఉంటే ఇక్కడ తెలుస్తుంది
+            document.getElementById('rides-list').innerHTML = "ఎర్రర్ వచ్చింది: " + error.message;
         });
 
-        window.acceptRide = async (id) => {
+        window.acceptRide = async (id, isAccepted) => {
+            if(isAccepted === 'true') return;
             try {
                 await updateDoc(doc(db, "rides", id), { status: "accepted" });
                 alert("రైడ్ కన్ఫర్మ్ అయ్యింది!");
-            } catch (e) { alert("Error: " + e.message); }
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
         };
     </script>
 </body>
 </html>
-
