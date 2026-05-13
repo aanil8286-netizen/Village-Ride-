@@ -3,28 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Ride - User</title>
+    <title>Village Ride - మీ ప్రయాణ తోడు</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        .btn { background: #e67e22; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 18px; cursor: pointer; font-weight: bold; }
-        #status-box { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; font-weight: bold; }
-        .accepted { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .call-btn { display: inline-block; margin-top: 10px; padding: 10px 20px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; }
+        :root { --primary: #27ae60; --secondary: #e67e22; }
+        body { font-family: 'Segoe UI', sans-serif; background: #e8f5e9; margin: 0; padding: 0; }
+        .header { background: var(--primary); color: white; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .container { max-width: 400px; margin: 30px auto; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 15px; margin: 10px 0; border: 2px solid #ddd; border-radius: 12px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--primary); }
+        .btn { background: var(--secondary); color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-size: 18px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn:hover { background: #d35400; transform: scale(1.02); }
+        #status-box { margin-top: 20px; padding: 20px; border-radius: 15px; display: none; text-align: center; }
+        .accepted { background: #d4edda; color: #155724; border: 2px solid var(--primary); }
     </style>
 </head>
 <body>
+    <div class="header">🚕 Village Ride</div>
     <div class="container">
-        <h2>Village Ride 🚕</h2>
         <div id="booking-ui">
-            <input type="text" id="pickup" placeholder="ఎక్కడ నుండి? (Pickup)">
-            <input type="text" id="drop" placeholder="ఎక్కడికి? (Drop)">
+            <p style="text-align:center; color:#555;">మీ ప్రయాణ వివరాలు నమోదు చేయండి</p>
+            <input type="text" id="pickup" placeholder="📍 ఎక్కడ నుండి?">
+            <input type="text" id="drop" placeholder="🏁 ఎక్కడికి?">
             <button class="btn" onclick="bookRide()">బండి బుక్ చేయండి</button>
         </div>
         <div id="status-box"></div>
     </div>
 
+    <!-- Firebase Scripts (ముందున్నవి అలాగే ఉంచండి) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -37,7 +42,6 @@
             messagingSenderId: "869545503903",
             appId: "1:869545503903:web:35efe840f51f382ecf86aa"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -46,27 +50,25 @@
             const d = document.getElementById('drop').value;
             if(!p || !d) { alert("ఊర్ల పేర్లు రాయండి"); return; }
 
+            const sBox = document.getElementById('status-box');
             try {
                 const docRef = await addDoc(collection(db, "rides"), {
                     pickup: p, drop: d, status: "pending", timestamp: Date.now()
                 });
 
                 document.getElementById('booking-ui').style.display = 'none';
-                const sBox = document.getElementById('status-box');
                 sBox.style.display = 'block';
-                sBox.innerHTML = "⏳ డ్రైవర్ కోసం వెతుకుతున్నాము...";
+                sBox.innerHTML = "⏳ డ్రైవర్ కోసం వెతుకుతున్నాము... వేచి ఉండండి.";
 
                 onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
                     const rideData = docSnap.data();
-                    if (rideData) {
-                        if (rideData.status === "accepted") {
-                            sBox.className = "accepted";
-                            sBox.innerHTML = `✅ డ్రైవర్ అంగీకరించారు!<br>ఫోన్: ${rideData.driverPhone}<br>
-                            <a href="tel:${rideData.driverPhone}" class="call-btn">📞 కాల్ చేయండి</a>`;
-                        } else if (rideData.status === "completed") {
-                            sBox.innerHTML = "🏁 మీ ప్రయాణం పూర్తయింది! ధన్యవాదాలు. ✨";
-                            setTimeout(() => { location.reload(); }, 4000);
-                        }
+                    if (rideData && rideData.status === "accepted") {
+                        sBox.className = "accepted";
+                        sBox.innerHTML = `✅ డ్రైవర్ అంగీకరించారు!<br>ఫోన్: ${rideData.driverPhone}<br>
+                        <a href="tel:${rideData.driverPhone}" style="display:block; margin-top:10px; padding:12px; background:var(--primary); color:white; text-decoration:none; border-radius:8px;">📞 కాల్ చేయండి</a>`;
+                    } else if (rideData && rideData.status === "completed") {
+                        sBox.innerHTML = "🏁 మీ ప్రయాణం పూర్తయింది! ధన్యవాదాలు. ✨";
+                        setTimeout(() => { location.reload(); }, 4000);
                     }
                 });
             } catch (e) { alert("Error: " + e.message); }
