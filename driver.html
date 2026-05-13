@@ -6,17 +6,17 @@
     <title>Village Ride - Captain</title>
     <style>
         body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
-        .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 400px; text-align: left; border-left: 5px solid #f1c40f; }
-        .btn { background: #27ae60; color: white; border: none; padding: 10px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 350px; text-align: left; }
+        .btn { background: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
     <h2>Captain Dashboard 👨‍✈️</h2>
-    <div id="rides-list">కొత్త రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
+    <div id="rides-list">రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -24,52 +24,35 @@
             projectId: "village-ride-e139b",
             storageBucket: "village-ride-e139b.firebasestorage.app",
             messagingSenderId: "869545503903",
-            appId: "1:869545503903:web:35efe840f51f382ecf86aa",
-            measurementId: "G-N23Y5LCWD0"
+            appId: "1:869545503903:web:35efe840f51f382ecf86aa"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // అతి సులభమైన పద్ధతిలో డేటా తెప్పించడం
+        // ఇక్కడ కేవలం rides collection ని గమనిస్తాం
         onSnapshot(collection(db, "rides"), (snapshot) => {
             const list = document.getElementById('rides-list');
-            
-            if (snapshot.empty) {
-                list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ ఏమీ లేవు.";
-                return;
-            }
+            if (snapshot.empty) { list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ లేవు."; return; }
             
             let html = "";
-            snapshot.forEach((documentSnap) => {
-                const data = documentSnap.data();
-                const id = documentSnap.id;
-                const isAccepted = data.status === "accepted";
-                
-                html += `
-                    <div class="ride-card">
-                        <p>📍 <b>నుండి:</b> ${data.pickup}</p>
-                        <p>🏁 <b>కి:</b> ${data.drop}</p>
-                        <button class="btn" style="background:${isAccepted ? '#95a5a6' : '#27ae60'}" 
-                                onclick="window.acceptRide('${id}', '${isAccepted}')">
-                            ${isAccepted ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}
-                        </button>
-                    </div>`;
+            snapshot.forEach((dSnap) => {
+                const data = dSnap.data();
+                const id = dSnap.id;
+                const isAcc = data.status === "accepted";
+                html += `<div class="ride-card">
+                    <p>📍 నుండి: ${data.pickup}</p><p>🏁 కి: ${data.drop}</p>
+                    <button class="btn" style="background:${isAcc ? '#ccc' : '#27ae60'}" 
+                    onclick="window.accRide('${id}', '${isAcc}')" ${isAcc ? 'disabled' : ''}>
+                    ${isAcc ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}</button></div>`;
             });
             list.innerHTML = html;
-        }, (error) => {
-            // ఒకవేళ ఏదైనా ప్రాబ్లం ఉంటే ఇక్కడ తెలుస్తుంది
-            document.getElementById('rides-list').innerHTML = "ఎర్రర్ వచ్చింది: " + error.message;
         });
 
-        window.acceptRide = async (id, isAccepted) => {
-            if(isAccepted === 'true') return;
-            try {
-                await updateDoc(doc(db, "rides", id), { status: "accepted" });
-                alert("రైడ్ కన్ఫర్మ్ అయ్యింది!");
-            } catch (e) {
-                alert("Error: " + e.message);
-            }
+        window.accRide = async (id, isAcc) => {
+            if(isAcc === 'true') return;
+            try { await updateDoc(doc(db, "rides", id), { status: "accepted" }); } 
+            catch (e) { alert("Error: " + e.message); }
         };
     </script>
 </body>
