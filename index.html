@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Ride - మీ ప్రయాణ తోడు</title>
+    <title>Village Ride - మీ ప్రయాణ తోడు</title><link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#27ae60">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
     <style>
         :root { --primary: #27ae60; --secondary: #e67e22; }
         body { font-family: 'Segoe UI', sans-serif; background: #e8f5e9; margin: 0; padding: 0; }
