@@ -8,15 +8,17 @@
         body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
         .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 350px; text-align: left; }
         .btn { background: #27ae60; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #driver-phone { width: 80%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: none; font-size: 16px; }
     </style>
 </head>
 <body>
     <h2>Captain Dashboard 👨‍✈️</h2>
+    <input type="number" id="driver-phone" placeholder="మీ ఫోన్ నంబర్ ఎంటర్ చేయండి">
     <div id="rides-list">రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -30,10 +32,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ఇక్కడ కేవలం rides collection ని గమనిస్తాం
         onSnapshot(collection(db, "rides"), (snapshot) => {
             const list = document.getElementById('rides-list');
-            if (snapshot.empty) { list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ లేవు."; return; }
+            if (snapshot.empty) { list.innerHTML = "బుకింగ్స్ లేవు."; return; }
             
             let html = "";
             snapshot.forEach((dSnap) => {
@@ -43,16 +44,23 @@
                 html += `<div class="ride-card">
                     <p>📍 నుండి: ${data.pickup}</p><p>🏁 కి: ${data.drop}</p>
                     <button class="btn" style="background:${isAcc ? '#ccc' : '#27ae60'}" 
-                    onclick="window.accRide('${id}', '${isAcc}')" ${isAcc ? 'disabled' : ''}>
+                    onclick="window.accRide('${id}')" ${isAcc ? 'disabled' : ''}>
                     ${isAcc ? 'అంగీకరించబడింది' : 'రైడ్ అంగీకరించు'}</button></div>`;
             });
             list.innerHTML = html;
         });
 
-        window.accRide = async (id, isAcc) => {
-            if(isAcc === 'true') return;
-            try { await updateDoc(doc(db, "rides", id), { status: "accepted" }); } 
-            catch (e) { alert("Error: " + e.message); }
+        window.accRide = async (id) => {
+            const phone = document.getElementById('driver-phone').value;
+            if(!phone || phone.length < 10) { alert("ముందుగా మీ 10 అంకెల ఫోన్ నంబర్ ఎంటర్ చేయండి"); return; }
+            
+            try {
+                await updateDoc(doc(db, "rides", id), { 
+                    status: "accepted",
+                    driverPhone: phone 
+                });
+                alert("రైడ్ కన్ఫర్మ్ అయ్యింది!");
+            } catch (e) { alert("Error: " + e.message); }
         };
     </script>
 </body>
