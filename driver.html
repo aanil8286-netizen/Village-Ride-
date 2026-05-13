@@ -2,7 +2,6 @@
 <html lang="te">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
     <style>
         body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
@@ -10,17 +9,26 @@
         .btn { border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
         .btn-accept { background: #27ae60; color: white; }
         .btn-complete { background: #e74c3c; color: white; }
-        #driver-phone { width: 80%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: none; font-size: 16px; }
     </style>
 </head>
 <body>
     <h2>Captain Dashboard 👨‍✈️</h2>
-    <input type="number" id="driver-phone" placeholder="మీ ఫోన్ నంబర్ ఎంటర్ చేయండి">
-    <div id="rides-list">రిక్వెస్ట్‌ల కోసం చూస్తున్నాము...</div>
+    <input type="number" id="driver-phone" placeholder="మీ ఫోన్ నంబర్">
+    <div id="rides-list"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 1. పాస్‌వర్డ్ సెక్యూరిటీ
+        const checkPassword = () => {
+            const pass = prompt("డ్రైవర్ పాస్‌వర్డ్ ఎంటర్ చేయండి:");
+            if (pass !== "123") { // ఇక్కడ మీ పాస్‌వర్డ్
+                alert("అనధికారిక యాక్సెస్!");
+                window.location.href = "about:blank";
+            }
+        };
+        checkPassword();
 
         const firebaseConfig = {
             apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -34,12 +42,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // కేవలం 'pending' మరియు 'accepted' స్టేటస్ ఉన్నవి మాత్రమే చూపిస్తాం
         const q = query(collection(db, "rides"), where("status", "in", ["pending", "accepted"]));
 
         onSnapshot(q, (snapshot) => {
             const list = document.getElementById('rides-list');
-            if (snapshot.empty) { list.innerHTML = "కొత్త బుకింగ్స్ లేవు."; return; }
+            if (snapshot.empty) { list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ లేవు."; return; }
             
             let html = "";
             snapshot.forEach((dSnap) => {
@@ -48,12 +55,11 @@
                 const isAcc = data.status === "accepted";
                 
                 html += `<div class="ride-card">
-                    <p>📍 నుండి: ${data.pickup}</p>
-                    <p>🏁 కి: ${data.drop}</p>
+                    <p>📍 నుండి: ${data.pickup}</p><p>🏁 కి: ${data.drop}</p>
                     ${!isAcc ? 
                         `<button class="btn btn-accept" onclick="window.updateRide('${id}', 'accepted')">రైడ్ అంగీకరించు</button>` : 
                         `<p style="color:green">✅ మీరు ఈ రైడ్‌లో ఉన్నారు</p>
-                         <button class="btn btn-complete" onclick="window.updateRide('${id}', 'completed')">రైడ్ పూర్తి చేయి (Complete)</button>`
+                         <button class="btn btn-complete" onclick="window.updateRide('${id}', 'completed')">రైడ్ పూర్తి చేయి</button>`
                     }
                 </div>`;
             });
@@ -62,17 +68,11 @@
 
         window.updateRide = async (id, newStatus) => {
             const phone = document.getElementById('driver-phone').value;
-            if(newStatus === 'accepted' && (!phone || phone.length < 10)) {
-                alert("ముందుగా మీ ఫోన్ నంబర్ ఎంటర్ చేయండి");
-                return;
-            }
-            
+            if(newStatus === 'accepted' && (!phone || phone.length < 10)) { alert("ఫోన్ నంబర్ ఇవ్వండి"); return; }
             try {
                 const updateData = { status: newStatus };
                 if(newStatus === 'accepted') updateData.driverPhone = phone;
-                
                 await updateDoc(doc(db, "rides", id), updateData);
-                if(newStatus === 'completed') alert("రైడ్ విజయవంతంగా పూర్తయింది!");
             } catch (e) { alert("Error: " + e.message); }
         };
     </script>
