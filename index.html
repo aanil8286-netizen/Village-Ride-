@@ -5,36 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - User</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; text-align: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
         input { width: 90%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
         .btn { background: #e67e22; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 18px; cursor: pointer; font-weight: bold; }
-        #msg { color: green; margin-top: 15px; font-weight: bold; display: none; }
+        #status-box { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; font-weight: bold; border: 2px solid; }
+        .pending { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+        .accepted { background: #d4edda; color: #155724; border-color: #c3e6cb; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2 style="color: #2c3e50;">Village Ride 🚕</h2>
         <p>మీ ప్రయాణ వివరాలు తెలపండి</p>
-        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి? (Pickup)">
-        <input type="text" id="drop" placeholder="ఎక్కడికి? (Drop)">
-        <button class="btn" onclick="bookRide()">బండి బుక్ చేయండి</button>
-        <p id="msg">రిక్వెస్ట్ పంపబడింది! డ్రైవర్ కోసం వేచి ఉండండి.</p>
+        <div id="booking-ui">
+            <input type="text" id="pickup" placeholder="ఎక్కడ నుండి? (Pickup)">
+            <input type="text" id="drop" placeholder="ఎక్కడికి? (Drop)">
+            <button class="btn" onclick="bookRide()">బండి బుక్ చేయండి</button>
+        </div>
+        <div id="status-box"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // మీరు పంపిన వివరాలే ఇక్కడ పెట్టాను
         const firebaseConfig = {
             apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
             authDomain: "village-ride-e139b.firebaseapp.com",
             projectId: "village-ride-e139b",
             storageBucket: "village-ride-e139b.firebasestorage.app",
             messagingSenderId: "869545503903",
-            appId: "1:869545503903:web:35efe840f51f382ecf86aa",
-            measurementId: "G-N23Y5LCWD0"
+            appId: "1:869545503903:web:35efe840f51f382ecf86aa"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -43,30 +45,28 @@
         window.bookRide = async () => {
             const p = document.getElementById('pickup').value;
             const d = document.getElementById('drop').value;
+            if(!p || !d) { alert("ఊర్ల పేర్లు రాయండి"); return; }
 
-            if(!p || !d) { 
-                alert("దయచేసి ఊర్ల పేర్లు రాయండి"); 
-                return; 
-            }
+            const statusBox = document.getElementById('status-box');
+            const bookingUi = document.getElementById('booking-ui');
 
             try {
-                // డేటాను పంపే భాగం
-                await addDoc(collection(db, "rides"), {
-                    pickup: p,
-                    drop: d,
-                    status: "pending",
-                    timestamp: Date.now()
+                const docRef = await addDoc(collection(db, "rides"), {
+                    pickup: p, drop: d, status: "pending", timestamp: Date.now()
                 });
-                
-                document.getElementById('msg').style.display = 'block';
-                alert("సక్సెస్! మీ రిక్వెస్ట్ డ్రైవర్‌కి చేరింది.");
-                
-                document.getElementById('pickup').value = "";
-                document.getElementById('drop').value = "";
-            } catch (e) {
-                alert("క్షమించండి! డేటా వెళ్లడం లేదు: " + e.message);
-                console.error(e);
-            }
+
+                bookingUi.style.display = 'none';
+                statusBox.style.display = 'block';
+                statusBox.className = 'status-box pending';
+                statusBox.innerHTML = "⏳ డ్రైవర్ కోసం వెతుకుతున్నాము... వేచి ఉండండి.";
+
+                onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
+                    if (docSnap.exists() && docSnap.data().status === "accepted") {
+                        statusBox.className = 'status-box accepted';
+                        statusBox.innerHTML = "✅ అద్భుతం! డ్రైవర్ మీ రైడ్‌ను అంగీకరించారు. బండి వస్తోంది! 🚕";
+                    }
+                });
+            } catch (e) { alert("Error: " + e.message); }
         };
     </script>
 </body>
