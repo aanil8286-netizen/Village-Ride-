@@ -58,10 +58,15 @@
 
                 onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
                     const rideData = docSnap.data();
-                    if (rideData && rideData.status === "accepted") {
-                        sBox.className = "accepted";
-                        sBox.innerHTML = `✅ డ్రైవర్ అంగీకరించారు!<br>ఫోన్: ${rideData.driverPhone}<br>
-                        <a href="tel:${rideData.driverPhone}" class="call-btn">📞 డ్రైవర్‌కు కాల్ చేయండి</a>`;
+                    if (rideData) {
+                        if (rideData.status === "accepted") {
+                            sBox.className = "accepted";
+                            sBox.innerHTML = `✅ డ్రైవర్ అంగీకరించారు!<br>ఫోన్: ${rideData.driverPhone}<br>
+                            <a href="tel:${rideData.driverPhone}" class="call-btn">📞 కాల్ చేయండి</a>`;
+                        } else if (rideData.status === "completed") {
+                            sBox.innerHTML = "🏁 మీ ప్రయాణం పూర్తయింది! ధన్యవాదాలు. ✨";
+                            setTimeout(() => { location.reload(); }, 4000);
+                        }
                     }
                 });
             } catch (e) { alert("Error: " + e.message); }
