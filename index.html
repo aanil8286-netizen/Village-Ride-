@@ -81,10 +81,53 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        window.bookRide = async () => {
+                window.bookRide = async () => {
             const p = document.getElementById('pickup').value;
             const d = document.getElementById('drop').value;
             if(!p || !d) { alert("దయచేసి వివరాలు నింపండి"); return; }
+
+            const sBox = document.getElementById('status-box');
+            try {
+                // రైడ్ రిక్వెస్ట్ పంపడం
+                const docRef = await addDoc(collection(db, "rides"), {
+                    pickup: p, 
+                    drop: d, 
+                    status: "pending", 
+                    timestamp: Date.now()
+                });
+
+                document.getElementById('booking-ui').style.display = 'none';
+                sBox.style.display = 'block';
+                sBox.innerHTML = "<p style='text-align:center;'>⏳ <b>డ్రైవర్ కోసం వెతుకుతున్నాము...</b></p>";
+
+                // డ్రైవర్ అంగీకరించాడా లేదా అని చెక్ చేయడం
+                onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
+                    if (!docSnap.exists()) return;
+                    const data = docSnap.data();
+                    
+                    if (data.status === "accepted") {
+                        sBox.className = "accepted driver-info";
+                        sBox.innerHTML = `
+                            <div style="text-align:left;">
+                                <h3 style="margin:0 0 10px 0; color:#155724; text-align:center;">✅ డ్రైవర్ దొరికారు!</h3>
+                                <hr style="border-color:#c3e6cb;">
+                                <p><b>👨‍✈️ పేరు:</b> ${data.driverName || 'N/A'}</p>
+                                <p><b>🏍️ బండి నంబర్:</b> ${data.bikeNumber || 'N/A'}</p>
+                                <p><b>📞 ఫోన్:</b> ${data.driverPhone || 'N/A'}</p>
+                                <a href="tel:${data.driverPhone}" class="call-btn">📞 కాల్ చేయండి</a>
+                            </div>
+                        `;
+                    } else if (data.status === "completed") {
+                        sBox.innerHTML = "<p style='text-align:center;'>🏁 <b>ప్రయాణం పూర్తయింది!</b></p>";
+                        setTimeout(() => { location.reload(); }, 3000);
+                    }
+                });
+            } catch (e) { 
+                alert("బుకింగ్ ఫెయిల్ అయ్యింది: " + e.message); 
+                console.error(e);
+            }
+        };
+        
 
             const sBox = document.getElementById('status-box');
             try {
