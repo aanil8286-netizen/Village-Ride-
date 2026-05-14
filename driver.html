@@ -68,9 +68,51 @@
     });
 
     window.updateRide = async (id, status) => {
-        const name = document.getElementById('d-name').value;
-        const bike = document.getElementById('d-bike').value;
-        const phone = document.getElementById('d-phone').value;
+    const name = document.getElementById('d-name').value;
+    const bike = document.getElementById('d-bike').value;
+    const phone = document.getElementById('d-phone').value;
+
+    if(!name || !bike || !phone) { 
+        alert("దయచేసి మీ పేరు, బండి నంబర్ మరియు ఫోన్ నంబర్ నమోదు చేయండి."); 
+        return; 
+    }
+
+    try {
+        const upData = { status: status };
+        
+        if(status === 'accepted') {
+            upData.driverName = name; 
+            upData.bikeNumber = bike; 
+            upData.driverPhone = phone;
+        }
+
+        // రైడ్ పూర్తయినప్పుడు మీ కమిషన్ లెక్క వేయడం
+        if(status === 'completed') {
+            const commission = 5;
+            upData.commissionAmount = commission; // ఇది డేటాబేస్‌లో సేవ్ అవుతుంది
+            
+            // వాలెట్ అప్‌డేట్ (డ్రైవర్ ఫోన్‌లో)
+            myBalance -= commission;
+            localStorage.setItem('wallet', myBalance);
+            document.getElementById('balance').innerText = "₹" + myBalance;
+
+            // అడ్మిన్ కోసం ప్రత్యేకంగా ఒక కలెక్షన్‌లో కమిషన్ వివరాలు సేవ్ చేయడం
+            await addDoc(collection(db, "admin_earnings"), {
+                driverName: name,
+                driverPhone: phone,
+                amount: commission,
+                timestamp: Date.now(),
+                rideId: id
+            });
+        }
+
+        await updateDoc(doc(db, "rides", id), upData);
+        if(status === 'completed') alert("రైడ్ పూర్తయింది. ₹5 కమిషన్ నమోదు చేయబడింది.");
+
+    } catch (e) {
+        alert("Error: " + e.message);
+    }
+};
 
         if(!name || !bike || !phone) { alert("ప్రొఫైల్ వివరాలు నింపండి"); return; }
 
