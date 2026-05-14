@@ -97,16 +97,26 @@
                 sBox.className = 'status-box';
                 sBox.innerHTML = "⏳ <b>డ్రైవర్ కోసం వెతుకుతున్నాము...</b><br>దయచేసి ఈ పేజీని క్లోజ్ చేయకండి.";
 
-                onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
-                    const data = docSnap.data();
-                    if (data && data.status === "accepted") {
-                        sBox.className = "accepted";
-                        sBox.innerHTML = `✅ <b>డ్రైవర్ దొరికారు!</b><br>ఫోన్: ${data.driverPhone}<br>
-                        <a href="tel:${data.driverPhone}" class="call-btn">📞 డ్రైవర్‌కు కాల్ చేయండి</a>`;
-                    } else if (data && data.status === "completed") {
-                        sBox.innerHTML = "🏁 <b>ప్రయాణం పూర్తయింది!</b><br>ధన్యవాదాలు. ✨";
-                        setTimeout(() => { location.reload(); }, 4000);
-                    }
+            <!-- index.html లోని onSnapshot భాగాన్ని ఇలా మార్చండి -->
+onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
+    const data = docSnap.data();
+    if (data && data.status === "accepted") {
+        sBox.className = "accepted";
+        sBox.style.display = "block";
+        sBox.innerHTML = `
+            <div style="text-align:left;">
+                <h3 style="margin:0; color:#155724;">✅ డ్రైవర్ దొరికారు!</h3>
+                <hr>
+                <p><b>👨‍✈️ పేరు:</b> ${data.driverName}</p>
+                <p><b>🏍️ బండి నంబర్:</b> ${data.bikeNumber}</p>
+                <p><b>📞 ఫోన్:</b> ${data.driverPhone}</p>
+                <a href="tel:${data.driverPhone}" class="call-btn" style="text-align:center;">డ్రైవర్‌కు కాల్ చేయండి</a>
+            </div>
+        `;
+    } else if (data && data.status === "completed") {
+        sBox.innerHTML = "🏁 <b>ప్రయాణం పూర్తయింది!</b><br>ధన్యవాదాలు. ✨";
+        setTimeout(() => { location.reload(); }, 5000);
+    }
                 });
             } catch (e) { alert("Error: " + e.message); }
         };
