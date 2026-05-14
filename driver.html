@@ -2,33 +2,52 @@
 <html lang="te">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
-        .ride-card { background: white; color: #333; padding: 15px; border-radius: 10px; margin: 15px auto; max-width: 350px; text-align: left; }
-        .btn { border: none; padding: 12px; width: 100%; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-accept { background: #27ae60; color: white; }
+        :root { --primary: #27ae60; --dark: #2c3e50; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 0; text-align: center; }
+        .header { background: var(--dark); color: white; padding: 20px; font-size: 22px; font-weight: bold; }
+        .container { max-width: 450px; margin: auto; padding: 15px; }
+        
+        .section-title { text-align: left; margin: 20px 10px 10px; color: var(--dark); font-weight: bold; border-left: 4px solid var(--primary); padding-left: 10px; }
+        
+        .ride-card { background: white; color: #333; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #ddd; }
+        .btn { border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; font-size: 16px; }
+        .btn-accept { background: var(--primary); color: white; }
         .btn-complete { background: #e74c3c; color: white; }
+        
+        #driver-phone { width: 90%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        
+        /* హిస్టరీ స్టైల్ */
+        .history-card { background: #fff; border-left: 5px solid #95a5a6; padding: 10px 15px; margin-bottom: 10px; border-radius: 8px; font-size: 14px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .history-info { color: #555; }
+        .badge-done { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h2>Captain Dashboard 👨‍✈️</h2>
-    <input type="number" id="driver-phone" placeholder="మీ ఫోన్ నంబర్">
-    <div id="rides-list"></div>
+
+    <div class="header">👨‍✈️ Captain Dashboard</div>
+
+    <div class="container">
+        <input type="number" id="driver-phone" placeholder="మీ ఫోన్ నంబర్ ఎంటర్ చేయండి">
+
+        <div class="section-title">కొత్త రైడ్ రిక్వెస్ట్‌లు</div>
+        <div id="rides-list">చూస్తున్నాము...</div>
+
+        <div class="section-title">ఈరోజు పూర్తి చేసిన రైడ్స్ (History)</div>
+        <div id="history-list">ఇంకా ఏమీ లేవు.</div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. పాస్‌వర్డ్ సెక్యూరిటీ
-        const checkPassword = () => {
-            const pass = prompt("డ్రైవర్ పాస్‌వర్డ్ ఎంటర్ చేయండి:");
-            if (pass !== "123") { // ఇక్కడ మీ పాస్‌వర్డ్
-                alert("అనధికారిక యాక్సెస్!");
-                window.location.href = "about:blank";
-            }
-        };
-        checkPassword();
+        // పాస్‌వర్డ్ చెక్
+        if (prompt("పాస్‌వర్డ్ ఇవ్వండి:") !== "123") {
+            alert("తప్పు పాస్‌వర్డ్!");
+            window.location.href = "about:blank";
+        }
 
         const firebaseConfig = {
             apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -42,33 +61,55 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const q = query(collection(db, "rides"), where("status", "in", ["pending", "accepted"]));
-
-        onSnapshot(q, (snapshot) => {
+        // 1. లైవ్ రైడ్స్ (Pending & Accepted)
+        const qLive = query(collection(db, "rides"), where("status", "in", ["pending", "accepted"]));
+        onSnapshot(qLive, (snapshot) => {
             const list = document.getElementById('rides-list');
-            if (snapshot.empty) { list.innerHTML = "ప్రస్తుతానికి బుకింగ్స్ లేవు."; return; }
-            
             let html = "";
+            if (snapshot.empty) html = "<p style='color:#999;'>కొత్త బుకింగ్స్ లేవు.</p>";
             snapshot.forEach((dSnap) => {
                 const data = dSnap.data();
                 const id = dSnap.id;
                 const isAcc = data.status === "accepted";
-                
-                html += `<div class="ride-card">
-                    <p>📍 నుండి: ${data.pickup}</p><p>🏁 కి: ${data.drop}</p>
-                    ${!isAcc ? 
-                        `<button class="btn btn-accept" onclick="window.updateRide('${id}', 'accepted')">రైడ్ అంగీకరించు</button>` : 
-                        `<p style="color:green">✅ మీరు ఈ రైడ్‌లో ఉన్నారు</p>
-                         <button class="btn btn-complete" onclick="window.updateRide('${id}', 'completed')">రైడ్ పూర్తి చేయి</button>`
-                    }
-                </div>`;
+                html += `
+                    <div class="ride-card">
+                        <p><b>📍 నుండి:</b> ${data.pickup}</p>
+                        <p><b>🏁 కి:</b> ${data.drop}</p>
+                        ${!isAcc ? 
+                            `<button class="btn btn-accept" onclick="window.updateRide('${id}', 'accepted')">రైడ్ అంగీకరించు</button>` : 
+                            `<p style="color:green; font-weight:bold;">✅ మీరు ఈ రైడ్‌లో ఉన్నారు</p>
+                             <button class="btn btn-complete" onclick="window.updateRide('${id}', 'completed')">రైడ్ పూర్తి చేయి (Complete)</button>`
+                        }
+                    </div>`;
             });
             list.innerHTML = html;
         });
 
+        // 2. హిస్టరీ (Completed)
+        const qHistory = query(collection(db, "rides"), where("status", "==", "completed"));
+        onSnapshot(qHistory, (snapshot) => {
+            const histList = document.getElementById('history-list');
+            let html = "";
+            if (snapshot.empty) html = "<p style='color:#999;'>హిస్టరీ ఖాళీగా ఉంది.</p>";
+            snapshot.forEach((dSnap) => {
+                const data = dSnap.data();
+                html += `
+                    <div class="history-card">
+                        <div class="history-info">
+                            <b>${data.pickup}</b> ➔ <b>${data.drop}</b>
+                        </div>
+                        <span class="badge-done">DONE</span>
+                    </div>`;
+            });
+            histList.innerHTML = html;
+        });
+
         window.updateRide = async (id, newStatus) => {
             const phone = document.getElementById('driver-phone').value;
-            if(newStatus === 'accepted' && (!phone || phone.length < 10)) { alert("ఫోన్ నంబర్ ఇవ్వండి"); return; }
+            if(newStatus === 'accepted' && (!phone || phone.length < 10)) {
+                alert("ముందుగా మీ ఫోన్ నంబర్ ఇవ్వండి");
+                return;
+            }
             try {
                 const updateData = { status: newStatus };
                 if(newStatus === 'accepted') updateData.driverPhone = phone;
