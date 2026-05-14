@@ -5,85 +5,87 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
     <style>
-        :root { --primary: #27ae60; --dark: #2c3e50; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 0; text-align: center; }
-        .header { background: var(--dark); color: white; padding: 20px; font-size: 22px; font-weight: bold; }
-        .container { max-width: 450px; margin: auto; padding: 15px; }
-        .section-title { text-align: left; margin: 20px 10px 10px; color: var(--dark); font-weight: bold; border-left: 4px solid var(--primary); padding-left: 10px; }
-        .ride-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: left; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .input-group { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { width: 90%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 15px; }
-        .btn { border: none; padding: 12px; width: 100%; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-accept { background: var(--primary); color: white; }
-        .btn-complete { background: #e74c3c; color: white; }
-        .history-card { background: #fff; border-left: 5px solid #95a5a6; padding: 10px 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; }
+        .wallet-card { background: #2c3e50; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; }
+        .ride-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+        .btn-acc { background: #27ae60; color: white; }
+        .btn-comp { background: #e74c3c; color: white; }
+        input { width: 90%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-    <div class="header">👨‍✈️ Captain Dashboard</div>
-    <div class="container">
-        <div class="input-group">
-            <p style="margin:0 0 10px 0; font-weight:bold; color: #555;">మీ వివరాలు నమోదు చేయండి</p>
-            <input type="text" id="driver-name" placeholder="మీ పేరు">
-            <input type="text" id="bike-number" placeholder="బండి నంబర్ (ఉదా: AP05 XX 1234)">
-            <input type="number" id="driver-phone" placeholder="ఫోన్ నంబర్">
-        </div>
 
-        <div class="section-title">కొత్త రైడ్ రిక్వెస్ట్‌లు</div>
-        <div id="rides-list">చూస్తున్నాము...</div>
+<div class="wallet-card">
+    <small>మీ వాలెట్ బ్యాలెన్స్</small>
+    <h2 id="balance">₹0</h2>
+</div>
 
-        <div class="section-title">హిస్టరీ</div>
-        <div id="history-list">ఏమీ లేవు.</div>
-    </div>
+<div id="profile-box" style="background:white; padding:15px; border-radius:10px; margin-bottom:20px;">
+    <input type="text" id="d-name" placeholder="మీ పేరు">
+    <input type="text" id="d-bike" placeholder="బండి నంబర్">
+    <input type="number" id="d-phone" placeholder="మీ ఫోన్ నంబర్">
+</div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<h3>కొత్త రైడ్స్</h3>
+<div id="rides-list"></div>
 
-        if (prompt("పాస్‌వర్డ్:") !== "123") { window.location.href = "about:blank"; }
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
-            authDomain: "village-ride-e139b.firebaseapp.com",
-            projectId: "village-ride-e139b",
-            storageBucket: "village-ride-e139b.firebasestorage.app",
-            messagingSenderId: "869545503903",
-            appId: "1:869545503903:web:35efe840f51f382ecf86aa"
-        };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+    if(prompt("Password:") !== "123") window.location.href="about:blank";
 
-        onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snapshot) => {
-            let html = "";
-            snapshot.forEach((dSnap) => {
-                const data = dSnap.data();
-                const id = dSnap.id;
-                const isAcc = data.status === "accepted";
-                html += `<div class="ride-card">
-                    <p><b>📍 నుండి:</b> ${data.pickup} | <b>🏁 కి:</b> ${data.drop}</p>
-                    ${!isAcc ? `<button class="btn btn-accept" onclick="window.updateRide('${id}', 'accepted')">అంగీకరించు</button>` : 
-                    `<p style="color:green">✅ మీరు రైడ్‌లో ఉన్నారు</p><button class="btn btn-complete" onclick="window.updateRide('${id}', 'completed')">పూర్తి చేయి</button>`}
-                </div>`;
-            });
-            document.getElementById('rides-list').innerHTML = html || "రిక్వెస్ట్‌లు లేవు.";
+    const firebaseConfig = {
+        apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+        authDomain: "village-ride-e139b.firebaseapp.com",
+        projectId: "village-ride-e139b",
+        storageBucket: "village-ride-e139b.firebasestorage.app",
+        messagingSenderId: "869545503903",
+        appId: "1:869545503903:web:35efe840f51f382ecf86aa"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // వాలెట్ లోకల్ మెమరీలో దాచుకుంటున్నాం (ప్రస్తుతానికి)
+    let myBalance = localStorage.getItem('wallet') || 0;
+    document.getElementById('balance').innerText = "₹" + myBalance;
+
+    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
+        let html = "";
+        snap.forEach(d => {
+            const data = d.data();
+            const isAcc = data.status === "accepted";
+            html += `<div class="ride-card">
+                <p>📍 <b>నుండి:</b> ${data.pickup} | 🏁 <b>కి:</b> ${data.drop}</p>
+                <p>💰 <b>ధర:</b> ₹${data.fare} | 📞 <b>యూజర్:</b> ${data.userPhone}</p>
+                ${!isAcc ? `<button class="btn btn-acc" onclick="updateRide('${d.id}', 'accepted')">Accept Ride</button>` : 
+                `<button class="btn btn-comp" onclick="updateRide('${d.id}', 'completed')">Complete & Pay ₹5 Commission</button>`}
+            </div>`;
         });
+        document.getElementById('rides-list').innerHTML = html || "రైడ్స్ లేవు.";
+    });
 
-        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed")), (snapshot) => {
-            let html = "";
-            snapshot.forEach(d => { const data = d.data(); html += `<div class="history-card"><span>${data.pickup} ➔ ${data.drop}</span><span style="font-size:10px; color:green;">DONE</span></div>`; });
-            document.getElementById('history-list').innerHTML = html || "ఖాళీగా ఉంది.";
-        });
+    window.updateRide = async (id, status) => {
+        const name = document.getElementById('d-name').value;
+        const bike = document.getElementById('d-bike').value;
+        const phone = document.getElementById('d-phone').value;
 
-        window.updateRide = async (id, newStatus) => {
-            const name = document.getElementById('driver-name').value;
-            const bike = document.getElementById('bike-number').value;
-            const phone = document.getElementById('driver-phone').value;
-            if(newStatus === 'accepted' && (!name || !bike || !phone)) { alert("అన్ని వివరాలు నింపండి"); return; }
-            
-            const updateData = { status: newStatus };
-            if(newStatus === 'accepted') { updateData.driverName = name; updateData.bikeNumber = bike; updateData.driverPhone = phone; }
-            await updateDoc(doc(db, "rides", id), updateData);
-        };
-    </script>
+        if(!name || !bike || !phone) { alert("ప్రొఫైల్ వివరాలు నింపండి"); return; }
+
+        if(status === 'completed') {
+            myBalance -= 5; // ప్రతి రైడ్ కి ₹5 కట్
+            localStorage.setItem('wallet', myBalance);
+            document.getElementById('balance').innerText = "₹" + myBalance;
+        }
+
+        const upData = { status: status };
+        if(status === 'accepted') {
+            upData.driverName = name; upData.bikeNumber = bike; upData.driverPhone = phone;
+        }
+        await updateDoc(doc(db, "rides", id), upData);
+    };
+</script>
 </body>
 </html>
