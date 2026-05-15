@@ -3,103 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Ride - User</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Village Ride - పల్లె ప్రయాణం</title>
     <style>
-        :root { --primary: #27ae60; --secondary: #e67e22; }
-        body { font-family: 'Segoe UI', sans-serif; background: #e8f5e9; margin: 0; padding: 0; }
-        .header { 
-            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
-                        url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80');
-            background-size: cover; background-position: center; color: white; 
-            padding: 40px 20px; text-align: center; font-size: 28px; font-weight: bold; 
-            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
-        }
-        .container { max-width: 400px; margin: -20px auto 30px; padding: 20px; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        input { width: 92%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
-        .btn { background: var(--secondary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; cursor: pointer; font-weight: bold; }
-        #status-box { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; background: #f8f9fa; border: 1px solid #eee; }
-        .fare-tag { color: var(--primary); font-weight: bold; text-align: center; margin: 10px 0; display: block; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; text-align: center; }
+        .header { background: #27ae60; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* ప్రొఫైల్ సెక్షన్ స్టైల్ */
+        #user-profile { border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        #phone-display-sec { display: flex; align-items: center; justify-content: center; gap: 15px; background: #e8f5e9; padding: 10px; border-radius: 10px; }
+        
+        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
+        .btn { width: 95%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s; }
+        .btn-book { background: #27ae60; color: white; margin-top: 10px; }
+        .btn-edit { background: #3498db; color: white; padding: 5px 12px; font-size: 14px; width: auto; }
+        .btn-save { background: #2c3e50; color: white; }
+
+        .status-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #f1c40f; text-align: left; }
     </style>
 </head>
 <body>
 
-<div class="header">🌳 Village Ride</div>
+<div class="header">
+    <h2 style="margin:0;">🛺 విలేజ్ రైడ్</h2>
+    <p style="margin:5px 0 0 0;">మీ ఊరి సొంత ట్యాక్సీ సర్వీస్</p>
+</div>
 
-<div class="container">
-    <div id="booking-ui">
-        <input type="number" id="user-phone" placeholder="మీ ఫోన్ నంబర్">
-        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి?">
-        <input type="number" id="distance" placeholder="ఎన్ని కిలోమీటర్లు? (సుమారుగా)" oninput="calcFare()">
-        <input type="text" id="drop" placeholder="ఎక్కడికి? (Drop Location)">
-        
-        <span id="fare-estimate" class="fare-tag"></span>
-        
-        <button class="btn" onclick="bookRide()">బండి బుక్ చేయండి 🚕</button>
+<div class="card" id="user-profile">
+    <!-- నంబర్ సేవ్ అయి ఉన్నప్పుడు ఇది కనిపిస్తుంది -->
+    <div id="phone-display-sec" style="display:none;">
+        <span id="saved-phone-text" style="font-weight:bold; font-size:18px; color:#2c3e50;"></span>
+        <button class="btn-edit" onclick="window.editPhone()">మార్చు</button>
     </div>
-    <div id="status-box"></div>
+    
+    <!-- నంబర్ లేనప్పుడు లేదా మార్చుకోవాలనుకున్నప్పుడు ఇది కనిపిస్తుంది -->
+    <div id="phone-input-sec">
+        <p style="margin:0 0 10px 0; font-size: 14px; color: #666;">బుకింగ్ కోసం మీ ఫోన్ నంబర్ ఇవ్వండి</p>
+        <input type="number" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్">
+        <button class="btn btn-save" onclick="window.savePhone()">నంబర్ సేవ్ చేయి</button>
+    </div>
+</div>
+
+<div class="card">
+    <input type="text" id="pickup" placeholder="ఎక్కడ ఎక్కాలి? (Pickup point)">
+    <input type="text" id="drop" placeholder="ఎక్కడికి వెళ్ళాలి? (Drop point)">
+    <input type="number" id="fare" placeholder="అంచనా ధర (₹)">
+    <button class="btn btn-book" onclick="window.bookRide()">రైడ్ బుక్ చేయండి</button>
+</div>
+
+<div id="booking-status" class="status-box" style="display:none;">
+    <h4 style="margin:0 0 10px 0; color: #27ae60;">🔔 మీ రైడ్ అప్‌డేట్:</h4>
+    <div id="status-info">డ్రైవర్ కోసం చూస్తున్నాము...</div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
         authDomain: "village-ride-e139b.firebaseapp.com",
         projectId: "village-ride-e139b",
-        storageBucket: "village-ride-e139b.firebasestorage.app",
-        messagingSenderId: "869545503903",
         appId: "1:869545503903:web:35efe840f51f382ecf86aa"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.calcFare = () => {
-        const dist = document.getElementById('distance').value;
-        const fareBox = document.getElementById('fare-estimate');
-        if(dist > 0) {
-            let fare = 10; // మొదటి కిలోమీటర్ కి ₹10
-            if(dist > 1) fare = 10 + (dist - 1) * 3; // తర్వాత ప్రతి కి.మీ కి ₹3
-            fareBox.innerText = "సుమారు ప్రయాణ ధర: ₹" + fare;
-            return fare;
+    // --- ఫోన్ నంబర్ మేనేజ్మెంట్ ---
+    window.onload = () => {
+        const savedPhone = localStorage.getItem('uPhone');
+        if(savedPhone) {
+            window.showSavedPhone(savedPhone);
+            window.trackLastRide(savedPhone); // పాత బుకింగ్ ఉంటే చూపిస్తుంది
         }
-        fareBox.innerText = "";
-        return 0;
     };
 
-    window.bookRide = async () => {
-        const phone = document.getElementById('user-phone').value;
-        const p = document.getElementById('pickup').value;
-        const d = document.getElementById('drop').value;
-        const dist = document.getElementById('distance').value;
-        const fare = calcFare();
+    window.savePhone = () => {
+        const phone = document.getElementById('u-phone').value;
+        if(phone.length < 10) {
+            alert("దయచేసి సరైన 10 అంకెల ఫోన్ నంబర్ ఇవ్వండి");
+            return;
+        }
+        localStorage.setItem('uPhone', phone);
+        window.showSavedPhone(phone);
+    };
 
-        if(!phone || !p || !d || !dist) { alert("అన్ని వివరాలు నింపండి"); return; }
+    window.showSavedPhone = (phone) => {
+        document.getElementById('saved-phone-text').innerText = "📞 " + phone;
+        document.getElementById('phone-input-sec').style.display = 'none';
+        document.getElementById('phone-display-sec').style.display = 'flex';
+    };
+
+    window.editPhone = () => {
+        document.getElementById('phone-input-sec').style.display = 'block';
+        document.getElementById('phone-display-sec').style.display = 'none';
+    };
+
+    // --- రైడ్ బుకింగ్ లాజిక్ ---
+    window.bookRide = async () => {
+        const phone = localStorage.getItem('uPhone');
+        const pickup = document.getElementById('pickup').value;
+        const drop = document.getElementById('drop').value;
+        const fare = document.getElementById('fare').value;
+
+        if(!phone) { alert("ముందుగా మీ ఫోన్ నంబర్ సేవ్ చేయండి"); return; }
+        if(!pickup || !drop || !fare) { alert("అన్ని వివరాలు నింపండి"); return; }
 
         try {
-            const docRef = await addDoc(collection(db, "rides"), {
-                userPhone: phone, pickup: p, drop: d, fare: fare,
-                status: "pending", timestamp: Date.now()
+            await addDoc(collection(db, "rides"), {
+                userPhone: phone,
+                pickup: pickup,
+                drop: drop,
+                fare: fare,
+                status: "pending",
+                timestamp: Date.now()
             });
+            alert("రైడ్ బుక్ అయ్యింది! డ్రైవర్ అంగీకరించగానే మీకు ఇక్కడ తెలుస్తుంది.");
+            window.trackLastRide(phone);
+        } catch (e) { alert("Error: " + e.message); }
+    };
 
-            document.getElementById('booking-ui').style.display = 'none';
-            const sBox = document.getElementById('status-box');
-            sBox.style.display = 'block';
-            sBox.innerHTML = "⏳ డ్రైవర్ కోసం వెతుకుతున్నాము...";
+    // --- స్టేటస్ ట్రాకింగ్ ---
+    window.trackLastRide = (phone) => {
+        const q = query(
+            collection(db, "rides"), 
+            where("userPhone", "==", phone),
+            orderBy("timestamp", "desc"),
+            limit(1)
+        );
 
-            onSnapshot(doc(db, "rides", docRef.id), (docSnap) => {
-                const data = docSnap.data();
-                if (data.status === "accepted") {
-                    sBox.innerHTML = `✅ డ్రైవర్ దొరికారు!<br><b>పేరు:</b> ${data.driverName}<br><b>బండి:</b> ${data.bikeNumber}<br><b>ధర:</b> ₹${data.fare}<br><a href="tel:${data.driverPhone}" style="display:block; margin-top:10px; background:green; color:white; padding:10px; text-decoration:none; border-radius:5px; text-align:center;">📞 కాల్ చేయండి</a>`;
-                } else if (data.status === "completed") {
-                    sBox.innerHTML = "🏁 ప్రయాణం పూర్తయింది. ధన్యవాదాలు!";
-                    setTimeout(() => location.reload(), 3000);
+        onSnapshot(q, (snap) => {
+            if(!snap.empty) {
+                const data = snap.docs[0].data();
+                document.getElementById('booking-status').style.display = 'block';
+                
+                let statusText = `<b>స్టేటస్:</b> ${data.status === 'pending' ? 'డ్రైవర్ కోసం వెయిటింగ్...' : 'డ్రైవర్ అంగీకరించారు!'}`;
+                
+                if(data.status === 'accepted') {
+                    statusText += `<br>🛺 <b>డ్రైవర్:</b> ${data.driverName}<br>📞 <b>ఫోన్:</b> ${data.driverPhone}<br>🆔 <b>బండి:</b> ${data.bikeNumber}`;
+                } else if(data.status === 'completed') {
+                    statusText = "✅ రైడ్ పూర్తయింది. ధన్యవాదాలు!";
                 }
-            });
-        } catch (e) { alert(e.message); }
+
+                document.getElementById('status-info').innerHTML = statusText;
+            }
+        });
     };
 </script>
+
 </body>
 </html>
