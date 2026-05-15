@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Village Ride - Admin</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; text-align: center; }
+        .request-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .btn-approve { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .header { background: #2c3e50; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .amount { color: #e67e22; font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>👑 అడ్మిన్ ప్యానల్</h2>
+    <p>రీఛార్జ్ అభ్యర్థనలను ఇక్కడ అప్రూవ్ చేయండి</p>
+</div>
+
+<div id="requests-list">అభ్యర్థనల కోసం చూస్తున్నాము...</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // మీ రక్షణ కోసం పాస్‌వర్డ్ (దీన్ని మీకు నచ్చినట్టు మార్చుకోవచ్చు)
+    if(prompt("అడ్మిన్ పాస్‌వర్డ్ ఇవ్వండి:") !== "456") {
+        window.location.href="about:blank";
+    }
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
+        authDomain: "village-ride-e139b.firebaseapp.com",
+        projectId: "village-ride-e139b",
+        storageBucket: "village-ride-e139b.firebasestorage.app",
+        messagingSenderId: "869545503903",
+        appId: "1:869545503903:web:35efe840f51f382ecf86aa"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // కేవలం 'pending' లో ఉన్న అభ్యర్థనలను మాత్రమే చూపిస్తుంది
+    onSnapshot(query(collection(db, "recharge_requests"), where("status", "==", "pending")), (snap) => {
+        let html = "";
+        if (snap.empty) {
+            html = "<p>కొత్త అభ్యర్థనలు ఏమీ లేవు.</p>";
+        }
+        snap.forEach(d => {
+            const data = d.data();
+            html += `
+                <div class="request-card">
+                    <div>
+                        <b>డ్రైవర్:</b> ${data.driverName}<br>
+                        <b>ఫోన్:</b> ${data.driverPhone}<br>
+                        <b>అమౌంట్:</b> <span class="amount">₹${data.amount}</span>
+                    </div>
+                    <button class="btn-approve" onclick="window.approveRequest('${d.id}', '${data.driverPhone}', ${data.amount})">అప్రూవ్</button>
+                </div>`;
+        });
+        document.getElementById('requests-list').innerHTML = html;
+    });
+
+    window.approveRequest = async (docId, phone, amount) => {
+        const confirmPay = confirm(`మీకు ₹${amount} అందాయా? అప్రూవ్ చేయమంటారా?`);
+        if (confirmPay) {
+            try {
+                // 1. అభ్యర్థన స్టేటస్‌ను 'approved' గా మార్చడం
+                await updateDoc(doc(db, "recharge_requests", docId), {
+                    status: "approved"
+                });
+                
+                alert("అప్రూవ్ అయ్యింది! డ్రైవర్ తన ఫోన్‌లో 'రీఛార్జ్ అప్రూవ్ అయ్యింది' అని చూడగలరు.");
+                // గమనిక: డ్రైవర్ ఫోన్‌లో లోకల్ బ్యాలెన్స్ పెరగడానికి వారు యాప్ రీలోడ్ చేయాలి లేదా మనం ఆటోమేటిక్ లాజిక్ రాయాలి.
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+    };
+</script>
+</body>
+</html>
