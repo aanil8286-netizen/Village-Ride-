@@ -6,10 +6,9 @@
     <title>Village Ride - పల్లె ప్రయాణం</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; text-align: center; }
-        .header { background: #27ae60; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .header { background: #27ae60; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* ఫోన్ నంబర్ సెక్షన్ */
         #phone-display-sec { 
             display: flex; align-items: center; justify-content: space-between; 
             background: #e8f5e9; padding: 15px; border-radius: 10px; border: 1px dashed #27ae60;
@@ -18,24 +17,19 @@
         input { width: 90%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
         .btn { width: 95%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-book { background: #27ae60; color: white; margin-top: 10px; }
+        .btn-edit { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-size: 14px; }
         
-        /* మార్చు బటన్ స్టైల్ */
-        .btn-edit { 
-            background: #e74c3c; color: white; border: none; padding: 8px 15px; 
-            border-radius: 5px; font-size: 14px; cursor: pointer; 
-        }
-        
-        .status-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #f1c40f; text-align: left; }
+        .status-box { margin-top: 20px; padding: 15px; background: #fff; border-radius: 10px; border-left: 5px solid #f1c40f; text-align: left; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h2 style="margin:0;">🛺 విలేజ్ రైడ్</h2>
-    <p style="margin:5px 0 0 0;">పల్లెటూరి ప్రయాణం - సులభం, సురక్షితం</p>
+    <p style="margin:5px 0 0 0;">మీ ప్రయాణం - మా బాధ్యత</p>
 </div>
 
-<!-- 1. ఫోన్ నంబర్ ప్రొఫైల్ సెక్షన్ -->
+<!-- ఫోన్ నంబర్ మేనేజ్మెంట్ -->
 <div class="card">
     <div id="phone-display-sec" style="display:none;">
         <span id="saved-phone-text" style="font-weight:bold; font-size:18px;"></span>
@@ -43,24 +37,22 @@
     </div>
     
     <div id="phone-input-sec">
-        <p style="margin:0 0 10px 0; font-weight:bold;">మీ ఫోన్ నంబర్ ఎంటర్ చేయండి:</p>
-        <input type="number" id="u-phone" placeholder="ఉదా: 9848012345">
+        <p style="margin:0 0 10px 0; font-weight:bold;">మీ ఫోన్ నంబర్ ఇవ్వండి:</p>
+        <input type="number" id="u-phone" placeholder="ఉదా: 98480xxxxx">
         <button class="btn" style="background:#2c3e50; color:white;" onclick="window.savePhone()">నెంబర్ సేవ్ చేయి</button>
     </div>
 </div>
 
-<!-- 2. బుకింగ్ వివరాలు -->
+<!-- రైడ్ బుకింగ్ వివరాలు -->
 <div class="card">
     <input type="text" id="pickup" placeholder="ఎక్కడ ఎక్కాలి? (From)">
     <input type="text" id="drop" placeholder="ఎక్కడికి వెళ్ళాలి? (To)">
-    
-    <!-- కిలోమీటర్ల ఆప్షన్ ఇక్కడ ఉంది -->
-    <input type="number" id="km" placeholder="ఎన్ని కిలోమీటర్లు? (అంచనా)">
-    
+    <input type="number" id="km" placeholder="ఎన్ని కిలోమీటర్లు? (KM)">
     <input type="number" id="fare" placeholder="మీరు ఇచ్చే ధర ₹ (Fare)">
     <button class="btn btn-book" onclick="window.bookRide()">రైడ్ బుక్ చేయండి</button>
 </div>
 
+<!-- లైవ్ బుకింగ్ స్టేటస్ -->
 <div id="booking-status" class="status-box" style="display:none;">
     <h4 style="margin:0 0 10px 0; color: #27ae60;">🔔 బుకింగ్ స్టేటస్:</h4>
     <div id="status-info">డ్రైవర్ కోసం చూస్తున్నాము...</div>
@@ -68,7 +60,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, where, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -80,7 +72,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // పేజీ లోడ్ అవ్వగానే
     window.onload = () => {
         const savedPhone = localStorage.getItem('uPhone');
         if(savedPhone) {
@@ -89,28 +80,25 @@
         }
     };
 
-    // ఫోన్ సేవ్ చేయడం
     window.savePhone = () => {
         const p = document.getElementById('u-phone').value;
-        if(p.length < 10) { alert("సరైన నంబర్ ఇవ్వండి"); return; }
+        if(p.length < 10) { alert("దయచేసి సరైన నంబర్ ఇవ్వండి"); return; }
         localStorage.setItem('uPhone', p);
         window.renderPhone(p);
+        window.trackLastRide(p);
     };
 
-    // నంబర్ చూపించడం
     window.renderPhone = (p) => {
         document.getElementById('saved-phone-text').innerText = "📞 " + p;
         document.getElementById('phone-input-sec').style.display = 'none';
         document.getElementById('phone-display-sec').style.display = 'flex';
     };
 
-    // నంబర్ ఎడిట్ చేయడం
     window.editPhone = () => {
         document.getElementById('phone-input-sec').style.display = 'block';
         document.getElementById('phone-display-sec').style.display = 'none';
     };
 
-    // రైడ్ బుక్ చేయడం
     window.bookRide = async () => {
         const uPhone = localStorage.getItem('uPhone');
         const pickup = document.getElementById('pickup').value;
@@ -126,31 +114,43 @@
                 userPhone: uPhone,
                 pickup: pickup,
                 drop: drop,
-                km: km || "తెలియదు",
+                km: km || "0",
                 fare: fare,
                 status: "pending",
                 timestamp: Date.now()
             });
-            alert("బుకింగ్ సక్సెస్!");
-            window.trackLastRide(uPhone);
+            alert("రైడ్ బుక్ అయ్యింది!");
         } catch (e) { alert(e.message); }
     };
 
     window.trackLastRide = (phone) => {
-        const q = query(collection(db, "rides"), where("userPhone", "==", phone), orderBy("timestamp", "desc"), limit(1));
+        const q = query(collection(db, "rides"), where("userPhone", "==", phone));
+
         onSnapshot(q, (snap) => {
             if(!snap.empty) {
-                const data = snap.docs[0].data();
+                // చివరగా బుక్ చేసిన రైడ్ వివరాలు
+                const docs = snap.docs;
+                const lastRide = docs[docs.length - 1].data();
+                
                 document.getElementById('booking-status').style.display = 'block';
-                let txt = `<b>స్టేటస్:</b> ${data.status}<br>`;
-                if(data.status === 'accepted') {
-                    txt += `🛺 డ్రైవర్: ${data.driverName}<br>📞 ఫోన్: ${data.driverPhone}`;
+                let statusInfo = document.getElementById('status-info');
+                
+                if(lastRide.status === 'pending') {
+                    statusInfo.innerHTML = `<b style="color:#e67e22;">⏳ డ్రైవర్ కోసం చూస్తున్నాము...</b><br>📍 ${lastRide.pickup} ➔ ${lastRide.drop}`;
+                } else if(lastRide.status === 'accepted') {
+                    statusInfo.innerHTML = `
+                        <b style="color:#27ae60;">✅ డ్రైవర్ అంగీకరించారు!</b><br>
+                        🛺 <b>డ్రైవర్:</b> ${lastRide.driverName}<br>
+                        📞 <b>ఫోన్:</b> ${lastRide.driverPhone}<br>
+                        🆔 <b>బండి:</b> ${lastRide.bikeNumber}
+                    `;
+                } else if(lastRide.status === 'completed') {
+                    statusInfo.innerHTML = `<b style="color:#2c3e50;">🏁 రైడ్ పూర్తయింది. ధన్యవాదాలు!</b>`;
+                    setTimeout(() => { document.getElementById('booking-status').style.display = 'none'; }, 7000);
                 }
-                document.getElementById('status-info').innerHTML = txt;
             }
         });
     };
 </script>
-
 </body>
 </html>
