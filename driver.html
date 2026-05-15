@@ -19,23 +19,24 @@
 <body>
 
 <div class="wallet-card">
-    <small>మీ వాలెట్ బ్యాలెన్స్ (Firebase)</small>
+    <small>మీ వాలెట్ బ్యాలెన్స్</small>
     <h2 id="balance">₹0</h2>
     
     <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-top: 10px;">
-        <input type="number" id="recharge-amount" placeholder="రీఛార్జ్ అమౌంట్ (ఉదా: 100)" style="color: black;">
+        <input type="number" id="recharge-amount" placeholder="రీఛార్జ్ అమౌంట్" style="color: black;">
         <button class="btn btn-recharge" onclick="window.requestRecharge()">రీఛార్జ్ రిక్వెస్ట్ పంపండి</button>
     </div>
 </div>
 
 <div id="profile-box" style="background:white; padding:15px; border-radius:10px; margin-bottom:20px;">
-    <input type="number" id="d-phone" placeholder="మీ ఫోన్ నంబర్" onchange="window.loadData()">
+    <p style="font-size: 12px; color: grey; margin: 0;">ప్రొఫైల్ వివరాలు (ఒక్కసారి నింపితే చాలు)</p>
+    <input type="number" id="d-phone" placeholder="మీ ఫోన్ నంబర్">
     <input type="text" id="d-name" placeholder="మీ పేరు">
     <input type="text" id="d-bike" placeholder="బండి నంబర్">
 </div>
 
 <h3>కొత్త రైడ్ రిక్వెస్ట్‌లు</h3>
-<div id="rides-list">నంబర్ ఎంటర్ చేయండి...</div>
+<div id="rides-list">వివరాలు లోడ్ అవుతున్నాయి...</div>
 
 <hr>
 <h3>పూర్తయిన రైడ్లు (History)</h3>
@@ -58,12 +59,31 @@
     const db = getFirestore(app);
     let myBalance = 0;
 
-    // డేటా లోడ్ చేయడం (Wallet + History)
+    // --- ఆటో సేవ్ లాజిక్ ---
+    const fields = ['d-phone', 'd-name', 'd-bike'];
+    
+    // పేజీ లోడ్ అవ్వగానే పాత వివరాలు నింపడం
+    window.onload = () => {
+        fields.forEach(id => {
+            const val = localStorage.getItem(id);
+            if(val) document.getElementById(id).value = val;
+        });
+        window.loadData();
+    };
+
+    // ఏదైనా బాక్సులో మార్పు చేస్తే వెంటనే సేవ్ అవ్వడం
+    fields.forEach(id => {
+        document.getElementById(id).addEventListener('input', (e) => {
+            localStorage.setItem(id, e.target.value);
+            if(id === 'd-phone') window.loadData(); // నంబర్ మారితే వాలెట్ కూడా మారాలి
+        });
+    });
+
     window.loadData = () => {
         const phone = document.getElementById('d-phone').value;
         if(!phone) return;
 
-        // వాలెట్ లోడ్
+        // వాలెట్ డేటా
         onSnapshot(doc(db, "drivers", phone), (docSnap) => {
             if (docSnap.exists()) {
                 myBalance = docSnap.data().balance || 0;
@@ -74,8 +94,9 @@
             document.getElementById('balance').innerText = "₹" + myBalance;
         });
 
-        // హిస్టరీ లోడ్
-        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone)), (snap) => {
+        // హిస్టరీ డేటా
+        const qHistory = query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone));
+        onSnapshot(qHistory, (snap) => {
             let html = "";
             snap.forEach(d => {
                 html += `<div class="history-item">🏁 ${d.data().drop} | 💰 ₹${d.data().fare}</div>`;
@@ -84,7 +105,7 @@
         });
     };
 
-    // లైవ్ రైడ్స్
+    // లైవ్ రైడ్స్ కోసం
     onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
         let html = "";
         snap.forEach(d => {
@@ -102,7 +123,10 @@
 
     window.updateRide = async (id, status) => {
         const phone = document.getElementById('d-phone').value;
-        if(!phone) { alert("ముందు ఫోన్ నంబర్ ఇవ్వండి"); return; }
+        const name = document.getElementById('d-name').value;
+        const bike = document.getElementById('d-bike').value;
+
+        if(!phone || !name || !bike) { alert("ముందు మీ వివరాలు నింపండి"); return; }
 
         if(status === 'completed') {
             await updateDoc(doc(db, "drivers", phone), { balance: myBalance - 5 });
@@ -111,9 +135,9 @@
 
         const upData = { status: status };
         if(status === 'accepted') {
-            upData.driverName = document.getElementById('d-name').value;
+            upData.driverName = name;
             upData.driverPhone = phone;
-            upData.bikeNumber = document.getElementById('d-bike').value;
+            upData.bikeNumber = bike;
         }
         await updateDoc(doc(db, "rides", id), upData);
     };
@@ -121,16 +145,18 @@
     window.requestRecharge = async () => {
         const amt = document.getElementById('recharge-amount').value;
         const phone = document.getElementById('d-phone').value;
-        if(!amt || !phone) { alert("వివరాలు నింపండి"); return; }
+        const name = document.getElementById('d-name').value;
+        if(!amt || !phone || !name) { alert("మొత్తం వివరాలు నింపండి"); return; }
 
         await addDoc(collection(db, "recharge_requests"), {
-            driverName: document.getElementById('d-name').value,
+            driverName: name,
             driverPhone: phone,
             amount: parseInt(amt),
             status: "pending",
             timestamp: Date.now()
         });
         alert("అభ్యర్థన పంపబడింది!");
+        document.getElementById('recharge-amount').value = "";
     };
 </script>
 </body>
