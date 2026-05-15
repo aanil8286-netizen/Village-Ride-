@@ -6,127 +6,116 @@
     <title>Village Ride - Captain</title>
     <style>
         body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; text-align: center; }
-        .wallet-card { background: #2c3e50; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .wallet-card { background: #2c3e50; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
         .ride-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: left; }
-        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 15px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
         .btn-acc { background: #27ae60; color: white; }
         .btn-comp { background: #e74c3c; color: white; }
-        .btn-recharge { background: #e67e22; color: white; margin-top: 5px; }
+        .btn-recharge { background: #e67e22; color: white; }
         input { width: 90%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; }
-        .recharge-section { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="wallet-card">
-    <small>మీ వాలెట్ బ్యాలెన్స్</small>
+    <small>మీ వాలెట్ బ్యాలెన్స్ (Firebase నుండి)</small>
     <h2 id="balance">₹0</h2>
     
-    <!-- రీఛార్జ్ సెక్షన్ -->
-    <div class="recharge-section">
-        <p style="margin:0 0 5px 0; font-size:13px;">రీఛార్జ్ కోసం ఇక్కడ అమౌంట్ ఎంటర్ చేయండి</p>
-        <input type="number" id="recharge-amount" placeholder="ఉదా: 50" style="color: black;">
+    <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 10px;">
+        <input type="number" id="recharge-amount" placeholder="రీఛార్జ్ అమౌంట్" style="color:black;">
         <button class="btn btn-recharge" onclick="window.requestRecharge()">రీఛార్జ్ అభ్యర్థన పంపండి</button>
     </div>
 </div>
 
 <div id="profile-box" style="background:white; padding:15px; border-radius:10px; margin-bottom:20px;">
     <input type="text" id="d-name" placeholder="మీ పేరు">
+    <input type="number" id="d-phone" placeholder="మీ ఫోన్ నంబర్ (బ్యాలెన్స్ కోసం)" onchange="window.loadWallet()">
     <input type="text" id="d-bike" placeholder="బండి నంబర్">
-    <input type="number" id="d-phone" placeholder="మీ ఫోన్ నంబర్">
 </div>
 
-<h3>కొత్త రైడ్ రిక్వెస్ట్‌లు</h3>
-<div id="rides-list">చూస్తున్నాము...</div>
+<h3>లైవ్ రైడ్ రిక్వెస్ట్‌లు</h3>
+<div id="rides-list">లోడ్ అవుతోంది...</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    if(prompt("పాస్‌వర్డ్ ఇవ్వండి:") !== "123") window.location.href="about:blank";
+    if(prompt("పాస్‌వర్డ్:") !== "123") window.location.href="about:blank";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
         authDomain: "village-ride-e139b.firebaseapp.com",
         projectId: "village-ride-e139b",
-        storageBucket: "village-ride-e139b.firebasestorage.app",
-        messagingSenderId: "869545503903",
         appId: "1:869545503903:web:35efe840f51f382ecf86aa"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    let myBalance = 0;
 
-    // వాలెట్ బ్యాలెన్స్ చూయించడం (Local Memory)
-    let myBalance = localStorage.getItem('wallet') || 0;
-    document.getElementById('balance').innerText = "₹" + myBalance;
+    // Firebase నుండి వాలెట్ లోడ్ చేయడం
+    window.loadWallet = () => {
+        const phone = document.getElementById('d-phone').value;
+        if(!phone) return;
 
-    // 1. రైడ్స్ లిస్ట్ అప్‌డేట్
+        onSnapshot(doc(db, "drivers", phone), (docSnap) => {
+            if (docSnap.exists()) {
+                myBalance = docSnap.data().balance || 0;
+            } else {
+                setDoc(doc(db, "drivers", phone), { balance: 0 });
+                myBalance = 0;
+            }
+            document.getElementById('balance').innerText = "₹" + myBalance;
+        });
+    };
+
+    // రైడ్స్ చూడటం
     onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
         let html = "";
         snap.forEach(d => {
             const data = d.data();
             const isAcc = data.status === "accepted";
             html += `<div class="ride-card">
-                <p>📍 <b>నుండి:</b> ${data.pickup} | 🏁 <b>కి:</b> ${data.drop}</p>
-                <p>💰 <b>ధర:</b> ₹${data.fare} | 📞 <b>యూజర్:</b> ${data.userPhone}</p>
+                <p>📍 నుండి: ${data.pickup} | 🏁 కి: ${data.drop}</p>
+                <p>💰 ధర: ₹${data.fare} | 📞 యూజర్: ${data.userPhone}</p>
                 ${!isAcc ? `<button class="btn btn-acc" onclick="window.updateRide('${d.id}', 'accepted')">రైడ్ అంగీకరించు</button>` : 
-                `<button class="btn btn-comp" onclick="window.updateRide('${d.id}', 'completed')">పూర్తి చేయి (₹5 కమిషన్ కట్ అవుతుంది)</button>`}
+                `<button class="btn btn-comp" onclick="window.updateRide('${d.id}', 'completed')">పూర్తి చేయి (₹5 కట్ అవుతుంది)</button>`}
             </div>`;
         });
-        document.getElementById('rides-list').innerHTML = html || "కొత్త రైడ్స్ లేవు.";
+        document.getElementById('rides-list').innerHTML = html || "రైడ్స్ లేవు.";
     });
 
-    // 2. రీఛార్జ్ అభ్యర్థన ఫంక్షన్
+    window.updateRide = async (id, status) => {
+        const phone = document.getElementById('d-phone').value;
+        if(!phone) { alert("ఫోన్ నంబర్ ఇవ్వండి"); return; }
+
+        if(status === 'completed') {
+            await updateDoc(doc(db, "drivers", phone), { balance: myBalance - 5 });
+            await addDoc(collection(db, "admin_earnings"), { driverPhone: phone, amount: 5, timestamp: Date.now() });
+        }
+        
+        const upData = { status: status };
+        if(status === 'accepted') {
+            upData.driverName = document.getElementById('d-name').value;
+            upData.driverPhone = phone;
+            upData.bikeNumber = document.getElementById('d-bike').value;
+        }
+        await updateDoc(doc(db, "rides", id), upData);
+    };
+
     window.requestRecharge = async () => {
         const amt = document.getElementById('recharge-amount').value;
         const phone = document.getElementById('d-phone').value;
-        const name = document.getElementById('d-name').value;
+        if(!amt || !phone) { alert("వివరాలు నింపండి"); return; }
 
-        if(!amt || !phone || !name) { 
-            alert("ముందుగా మీ పేరు, ఫోన్ మరియు ఎంత అమౌంటో ఎంటర్ చేయండి."); 
-            return; 
-        }
-
-        try {
-            await addDoc(collection(db, "recharge_requests"), {
-                driverName: name,
-                driverPhone: phone,
-                amount: parseInt(amt),
-                status: "pending",
-                timestamp: Date.now()
-            });
-            alert("మీ అభ్యర్థన పంపబడింది! మీరు ఫోన్ పే లో డబ్బులు పంపిన తర్వాత అడ్మిన్ అప్రూవ్ చేస్తారు.");
-            document.getElementById('recharge-amount').value = "";
-        } catch (e) { alert(e.message); }
-    };
-
-    // 3. రైడ్ స్టేటస్ అప్‌డేట్ ఫంక్షన్
-    window.updateRide = async (id, status) => {
-        const name = document.getElementById('d-name').value;
-        const bike = document.getElementById('d-bike').value;
-        const phone = document.getElementById('d-phone').value;
-
-        if(!name || !bike || !phone) { alert("ప్రొఫైల్ వివరాలు నింపండి"); return; }
-
-        if(status === 'completed') {
-            myBalance -= 5; 
-            localStorage.setItem('wallet', myBalance);
-            document.getElementById('balance').innerText = "₹" + myBalance;
-            
-            // అడ్మిన్ లెక్క కోసం
-            await addDoc(collection(db, "admin_earnings"), {
-                driverName: name,
-                amount: 5,
-                timestamp: Date.now()
-            });
-        }
-
-        const upData = { status: status };
-        if(status === 'accepted') {
-            upData.driverName = name; upData.bikeNumber = bike; upData.driverPhone = phone;
-        }
-        await updateDoc(doc(db, "rides", id), upData);
+        await addDoc(collection(db, "recharge_requests"), {
+            driverName: document.getElementById('d-name').value,
+            driverPhone: phone,
+            amount: parseInt(amt),
+            status: "pending",
+            timestamp: Date.now()
+        });
+        alert("అభ్యర్థన పంపబడింది!");
     };
 </script>
 </body>
