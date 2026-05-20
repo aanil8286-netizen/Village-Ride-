@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
+    
+    <!--  🛵 హోమ్ స్క్రీన్ పై బైక్ ఐకాన్ కనిపించడానికి డైరెక్ట్ లింక్స్ -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3063/3063198.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063198.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+
     <style>
         body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; text-align: center; }
         .wallet-card { background: #2c3e50; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -95,7 +102,7 @@
         });
     };
 
-    // లైవ్ రైడ్స్ (పెండింగ్ & యాక్సెప్ట్ మాత్రమే)
+    // లైవ్ రైడ్స్ (పెండింగ్ & యాక్సెప్ట్ మాత్రమే - పాతవి రావు)
     onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
         let html = "";
         const myPhone = document.getElementById('d-phone').value;
