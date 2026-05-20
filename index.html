@@ -4,33 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride</title>
-        <!-- 100% బ్లాక్ అవ్వని గూగుల్ అఫీషియల్ ఐకాన్ కోడ్ -->
-    <link rel="icon" type="image/x-icon" href="https://www.google.com/favicon.ico">
-    <link rel="apple-touch-icon" href="https://www.google.com/favicon.ico">
+    
+    <!-- 🛺 మీ గిట్‌హబ్ లోని icon.png మరియు manifest ని లింక్ చేసే కోడ్ -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <meta name="theme-color" content="#2c3e50">
 
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; display: block; box-sizing: border-box; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #f4f4f4; padding: 15px; margin: 0; text-align: center; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -15px -15px 20px -15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left; }
+        h2, h3 { margin-top: 0; color: #2c3e50; }
+        label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; margin-top: 15px; }
+        .btn:hover { background: #219150; }
+        .driver-link { display: inline-block; margin-top: 20px; color: #2c3e50; font-weight: bold; text-decoration: none; padding: 10px; border: 2px solid #2c3e50; border-radius: 8px; background: white; }
     </style>
 </head>
 <body>
 
-    <h2>Village Ride - యూజర్</h2>
+    <div class="header">
+        <h1 style="margin:0; font-size: 24px;">🏡 Village Ride</h1>
+        <p style="margin:5px 0 0 0; opacity: 0.8;">గ్రామీణ ప్రాంతాల సురక్షిత ప్రయాణం</p>
+    </div>
     
     <div class="card">
-        <h3>కొత్త రైడ్ బుక్ చేయండి</h3>
-        <input type="text" id="u-phone" placeholder="మీ ఫోన్ నంబర్">
-        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి (Pickup)">
-        <input type="text" id="drop" placeholder="ఎక్కడికి (Drop)">
-        <input type="number" id="fare" placeholder="ఎంత డబ్బులు ఇస్తారు (Fare)">
-        <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి</button>
+        <h3>🛺 మీ ప్రయాణ వివరాలు</h3>
+        
+        <label for="u-phone">మొబైల్ సంఖ్య:</label>
+        <input type="tel" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్">
+
+        <label for="pickup">ఎక్కడ నుండి (Pickup Location):</label>
+        <input type="text" id="pickup" placeholder="మీరు ఎక్కడ ఉన్నారో రాయండి">
+
+        <label for="drop">ఎక్కడికి (Drop Location):</label>
+        <input type="text" id="drop" placeholder="మీరు వెళ్లాల్సిన ఊరి పేరు">
+
+        <label for="vehicle-type">వాహనం రకం:</label>
+        <select id="vehicle-type">
+            <option value="bike">🏍️ బైక్ (Bike)</option>
+            <option value="auto">🛺 ఆటో (Auto)</option>
+        </select>
+
+        <label for="fare">మీరు ఇచ్చే కిరాయి (Fare):</label>
+        <input type="number" id="fare" placeholder="₹ ఎంత డబ్బులు ఇస్తారు?">
+
+        <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి ➔</button>
     </div>
 
-    <div style="margin-top: 30px;">
-        <a href="driver.html" style="color: #2c3e50; font-weight: bold;">డ్రైవర్ లాగిన్ పేజీకి వెళ్ళండి ➔</a>
-    </div>
+    <!-- డ్రైవర్ లాగిన్ లింక్ కింద క్లీన్ గా ఉంటుంది -->
+    <a href="driver.html" class="driver-link">👨‍✈️ కెప్టెన్ / డ్రైవర్ లాగిన్ పేజీ</a>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -55,24 +80,32 @@
         const phone = document.getElementById('u-phone').value;
         const pickup = document.getElementById('pickup').value;
         const drop = document.getElementById('drop').value;
+        const vehicle = document.getElementById('vehicle-type').value;
         const fare = document.getElementById('fare').value;
 
-        if(!phone || !pickup || !drop || !fare) { alert("అన్ని వివరాలు నింపండి"); return; }
+        if(!phone || !pickup || !drop || !fare) { alert("దయచేసి అన్ని వివరాలు నింపండి"); return; }
+        if(phone.length < 10) { alert("సరైన ఫోన్ నంబర్ ఇవ్వండి"); return; }
+        
         localStorage.setItem('u-phone', phone);
 
-        await addDoc(collection(db, "rides"), {
-            userPhone: phone,
-            pickup: pickup,
-            drop: drop,
-            fare: parseInt(fare),
-            status: "pending",
-            timestamp: Date.now()
-        });
+        try {
+            await addDoc(collection(db, "rides"), {
+                userPhone: phone,
+                pickup: pickup,
+                drop: drop,
+                vehicleType: vehicle,
+                fare: parseInt(fare),
+                status: "pending",
+                timestamp: Date.now()
+            });
 
-        alert("రైడ్ బుకింగ్ అభ్యర్థన పంపబడింది! కెప్టెన్ వచ్చే వరకు ఆగండి.");
-        document.getElementById('pickup').value = "";
-        document.getElementById('drop').value = "";
-        document.getElementById('fare').value = "";
+            alert("✅ మీ రైడ్ బుకింగ్ అభ్యర్థన పంపబడింది! డ్రైవర్ అంగీకరించే వరకు ఆగండి.");
+            document.getElementById('pickup').value = "";
+            document.getElementById('drop').value = "";
+            document.getElementById('fare').value = "";
+        } catch (error) {
+            alert("సమస్య వచ్చింది: " + error.message);
+        }
     };
 </script>
 </body>
