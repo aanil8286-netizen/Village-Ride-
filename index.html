@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride</title>
     
-    <!-- 🛺 మీ గిట్‌హబ్ లోని icon.png మరియు manifest ని లింక్ చేసే కోడ్ -->
+    <!-- 🛺 మీ బైక్ ఐకాన్ మరియు మేనిఫెస్ట్ లింక్ -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
@@ -15,12 +15,13 @@
         body { font-family: sans-serif; background: #f4f4f4; padding: 15px; margin: 0; text-align: center; }
         .header { background: #2c3e50; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -15px -15px 20px -15px; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left; }
-        h2, h3 { margin-top: 0; color: #2c3e50; }
+        h3 { margin-top: 0; color: #2c3e50; }
         label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
         .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; margin-top: 15px; }
-        .btn:hover { background: #219150; }
+        .btn-change { background: #e67e22; color: white; padding: 5px 10px; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; float: right; margin-top: -30px; }
         .driver-link { display: inline-block; margin-top: 20px; color: #2c3e50; font-weight: bold; text-decoration: none; padding: 10px; border: 2px solid #2c3e50; border-radius: 8px; background: white; }
+        .clear { clear: both; }
     </style>
 </head>
 <body>
@@ -31,11 +32,19 @@
     </div>
     
     <div class="card">
-        <h3>🛺 మీ ప్రయాణ వివరాలు</h3>
+        <div style="width: 100%;">
+            <h3 style="display:inline-block;">📱 యూజర్ ప్రొఫైల్</h3>
+            <button class="btn-change" onclick="window.enablePhoneEdit()">నంబర్ మార్చు</button>
+        </div>
+        <div class="clear"></div>
         
         <label for="u-phone">మొబైల్ సంఖ్య:</label>
-        <input type="tel" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్">
+        <input type="tel" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్" disabled>
+    </div>
 
+    <div class="card">
+        <h3>🛺 ప్రయాణ వివరాలు</h3>
+        
         <label for="pickup">ఎక్కడ నుండి (Pickup Location):</label>
         <input type="text" id="pickup" placeholder="మీరు ఎక్కడ ఉన్నారో రాయండి">
 
@@ -54,7 +63,6 @@
         <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి ➔</button>
     </div>
 
-    <!-- డ్రైవర్ లాగిన్ లింక్ కింద క్లీన్ గా ఉంటుంది -->
     <a href="driver.html" class="driver-link">👨‍✈️ కెప్టెన్ / డ్రైవర్ లాగిన్ పేజీ</a>
 
 <script type="module">
@@ -73,7 +81,19 @@
 
     window.onload = () => {
         const p = localStorage.getItem('u-phone');
-        if(p) document.getElementById('u-phone').value = p;
+        if(p) {
+            document.getElementById('u-phone').value = p;
+            document.getElementById('u-phone').disabled = true;
+        } else {
+            document.getElementById('u-phone').disabled = false;
+            document.getElementById('u-phone').placeholder = "మొదట మీ ఫోన్ నంబర్ టైప్ చేయండి";
+        }
+    };
+
+    window.enablePhoneEdit = () => {
+        document.getElementById('u-phone').disabled = false;
+        document.getElementById('u-phone').focus();
+        alert("ఇప్పుడు మీరు మొబైల్ నంబర్ మార్చుకోవచ్చు. మార్చిన తర్వాత రైడ్ బుక్ చేస్తే కొత్త నంబర్ సేవ్ అవుతుంది.");
     };
 
     window.bookRide = async () => {
@@ -87,6 +107,7 @@
         if(phone.length < 10) { alert("సరైన ఫోన్ నంబర్ ఇవ్వండి"); return; }
         
         localStorage.setItem('u-phone', phone);
+        document.getElementById('u-phone').disabled = true;
 
         try {
             await addDoc(collection(db, "rides"), {
