@@ -10,6 +10,7 @@
         .ride-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: left; border-left: 5px solid #27ae60; }
         .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 15px; }
         .btn-acc { background: #27ae60; color: white; }
+        .btn-rej { background: #7f8c8d; color: white; margin-top: 5px; }
         .btn-comp { background: #e74c3c; color: white; }
         .btn-recharge { background: #e67e22; color: white; margin-top: 5px; }
         input { width: 90%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
@@ -48,7 +49,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     if(prompt("పాస్‌వర్డ్ ఇవ్వండి:") !== "123") window.location.href="about:blank";
 
@@ -62,6 +63,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     let myBalance = 0;
+    let rejectedRides = []; // రిజెక్ట్ చేసిన రైడ్ల ఐడీలను దాచుకోవడానికి
 
     const fields = ['d-phone', 'd-name', 'd-bike'];
     
@@ -84,12 +86,10 @@
         const phone = document.getElementById('d-phone').value;
         if(!phone) return;
 
-        // వాలెట్ మానిటరింగ్
         onSnapshot(doc(db, "drivers", phone), (docSnap) => {
             myBalance = docSnap.exists() ? (docSnap.data().balance || 0) : 0;
             document.getElementById('balance').innerText = "₹" + myBalance;
             
-            // బ్యాలెన్స్ చెక్
             const alertBox = document.getElementById('low-balance-alert');
             if (myBalance <= 0) {
                 alertBox.style.display = 'block';
@@ -98,7 +98,6 @@
             }
         });
 
-        // హిస్టరీ
         onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone)), (snap) => {
             let html = "";
             snap.forEach(d => {
@@ -108,11 +107,10 @@
         });
     };
 
-    // రైడ్స్ కనిపించే లాజిక్ (Balance కంట్రోల్ ఇక్కడ ఉంది)
+    // లైవ్ రైడ్స్ చూసే ఫంక్షన్
     onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
         let html = "";
         
-        // బ్యాలెన్స్ లేకపోతే రైడ్స్ చూపించదు
         if (myBalance <= 0) {
             document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది. కొత్త రైడ్స్ కోసం వెంటనే రీఛార్జ్ చేయండి!</div>";
             return;
@@ -122,12 +120,16 @@
             const data = d.data();
             const isAcc = data.status === "accepted";
             
-            // కేవలం ఈ డ్రైవర్ అంగీకరించినవి లేదా అందరికీ కనిపించే పెండింగ్ రైడ్లు
+            // ఒకవేళ ఈ రైడ్‌ను డ్రైవర్ ఇప్పటికే రిజెక్ట్ చేసి ఉంటే చూపించదు
+            if(rejectedRides.includes(d.id)) return;
+
             if (data.status === "pending" || data.driverPhone === document.getElementById('d-phone').value) {
-                html += `<div class="ride-card">
+                html += `<div class="ride-card" id="card-${d.id}">
                     <p>📍 <b>నుండి:</b> ${data.pickup} | 🏁 <b>కి:</b> ${data.drop}</p>
                     <p>💰 <b>ధర:</b> ₹${data.fare} | 📞 <b>యూజర్:</b> ${data.userPhone}</p>
-                    ${!isAcc ? `<button class="btn btn-acc" onclick="window.updateRide('${d.id}', 'accepted')">రైడ్ అంగీకరించు</button>` : 
+                    ${!isAcc ? 
+                    `<button class="btn btn-acc" onclick="window.updateRide('${d.id}', 'accepted')">రైడ్ అంగీకరించు</button>
+                     <button class="btn btn-rej" onclick="window.rejectRide('${d.id}')">రిజెక్ట్ (వద్దు)</button>` : 
                     `<button class="btn btn-comp" onclick="window.updateRide('${d.id}', 'completed')">పూర్తి చేయి (₹5 కట్ అవుతుంది)</button>`}
                 </div>`;
             }
@@ -135,12 +137,30 @@
         document.getElementById('rides-list').innerHTML = html || "కొత్త రైడ్స్ లేవు.";
     });
 
+    // రిజెక్ట్ చేసే లాజిక్
+    window.rejectRide = (id) => {
+        if(confirm("ఈ రైడ్ మీకు వద్దు అనుకుంటున్నారా?")) {
+            rejectedRides.push(id); // ఈ రైడ్ ఐడీని లిస్టులో వేస్తాం
+            const element = document.getElementById(`card-${id}`);
+            if(element) element.remove(); // స్క్రీన్ పై నుండి వెంటనే తీసేస్తాం
+        }
+    };
+
     window.updateRide = async (id, status) => {
         const phone = document.getElementById('d-phone').value;
         const name = document.getElementById('d-name').value;
         const bike = document.getElementById('d-bike').value;
 
         if(!phone || !name || !bike) { alert("వివరాలు నింపండి"); return; }
+
+        // డబుల్ బుకింగ్ కాకుండా లాక్ చేయడం
+        const rideRef = doc(db, "rides", id);
+        const rideSnap = await getDoc(rideRef);
+
+        if (status === 'accepted' && rideSnap.data().status === 'accepted') {
+            alert("సారీ! ఈ రైడ్ ఇప్పటికే వేరే డ్రైవర్ తీసుకున్నారు.");
+            return;
+        }
 
         if(status === 'completed') {
             await updateDoc(doc(db, "drivers", phone), { balance: myBalance - 5 });
@@ -153,7 +173,9 @@
             upData.driverPhone = phone;
             upData.bikeNumber = bike;
         }
-        await updateDoc(doc(db, "rides", id), upData);
+        await updateDoc(rideRef, upData);
+        
+        if(status === 'accepted') alert("రైడ్ సక్సెస్‌ఫుల్ గా అంగీకరించారు!");
     };
 
     window.requestRecharge = async () => {
