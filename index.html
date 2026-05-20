@@ -17,56 +17,41 @@
         h3 { margin-top: 0; color: #2c3e50; }
         label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; margin-top: 15px; }
-        
-        /* 📱 నంబర్ మార్చు బటన్ స్టైల్స్ */
+        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; margin-top: 15px; }
+        .btn-change { background: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
         .profile-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .btn-change { background: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .status-box { background: #fff3cd; border: 2px solid #ffeeba; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1 style="margin:0; font-size: 24px;">🏡 Village Ride</h1>
-        <p style="margin:5px 0 0 0; opacity: 0.8;">గ్రామీణ ప్రాంతాల సురక్షిత ప్రయాణం</p>
     </div>
     
-    <!-- ప్రొఫైల్ కార్డ్ -->
     <div class="card">
         <div class="profile-container">
             <h3 style="margin:0;">📱 యూజర్ ప్రొఫైల్</h3>
-            <button class="btn-change" onclick="window.enablePhoneEdit()">నంబర్ మార్చు</button>
+            <button class="btn-change" onclick="document.getElementById('u-phone').disabled=false">నంబర్ మార్చు</button>
         </div>
-        
-        <label for="u-phone">మొబైల్ సంఖ్య:</label>
-        <input type="tel" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్" disabled>
+        <label>మొబైల్ సంఖ్య:</label>
+        <input type="tel" id="u-phone" disabled>
     </div>
 
-    <!-- ప్రయాణ వివరాల కార్డ్ -->
-    <div class="card">
+    <div class="card" id="booking-card">
         <h3>🛺 ప్రయాణ వివరాలు</h3>
-        
-        <label for="pickup">ఎక్కడ నుండి (Pickup Location):</label>
-        <input type="text" id="pickup" placeholder="మీరు ఎక్కడ ఉన్నారో రాయండి">
-
-        <label for="drop">ఎక్కడికి (Drop Location):</label>
-        <input type="text" id="drop" placeholder="మీరు వెళ్లాల్సిన ఊరి పేరు">
-
-        <label for="vehicle-type">వాహనం రకం:</label>
-        <select id="vehicle-type">
-            <option value="bike">🏍️ బైక్ (Bike)</option>
-            <option value="auto">🛺 ఆటో (Auto)</option>
-        </select>
-
-        <label for="fare">మీరు ఇచ్చే కిరాయి (Fare):</label>
-        <input type="number" id="fare" placeholder="₹ ఎంత డబ్బులు ఇస్తారు?">
-
-        <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి ➔</button>
+        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి (Pickup)">
+        <input type="text" id="drop" placeholder="ఎక్కడికి (Drop)">
+        <select id="vehicle-type"><option value="bike">🏍️ బైక్</option><option value="auto">🛺 ఆటో</option></select>
+        <input type="number" id="fare" placeholder="కిరాయి (Fare)">
+        <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి</button>
     </div>
+
+    <div id="status-area"></div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -78,54 +63,35 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.onload = () => {
-        const p = localStorage.getItem('u-phone');
-        if(p) {
-            document.getElementById('u-phone').value = p;
-            document.getElementById('u-phone').disabled = true;
-        } else {
-            document.getElementById('u-phone').disabled = false;
-            document.getElementById('u-phone').placeholder = "మొదట మీ ఫోన్ నంబర్ టైప్ చేయండి";
-        }
-    };
-
-    window.enablePhoneEdit = () => {
-        document.getElementById('u-phone').disabled = false;
-        document.getElementById('u-phone').focus();
-        alert("ఇప్పుడు బాక్సు ఓపెన్ అయింది, మొబైల్ నంబర్ మార్చుకోండి!");
-    };
+    window.onload = () => { document.getElementById('u-phone').value = localStorage.getItem('u-phone') || ""; };
 
     window.bookRide = async () => {
         const phone = document.getElementById('u-phone').value;
         const pickup = document.getElementById('pickup').value;
         const drop = document.getElementById('drop').value;
-        const vehicle = document.getElementById('vehicle-type').value;
         const fare = document.getElementById('fare').value;
 
-        if(!phone || !pickup || !drop || !fare) { alert("దయచేసి అన్ని వివరాలు నింపండి"); return; }
-        if(phone.length < 10) { alert("సరైన ఫోన్ నంబర్ ఇవ్వండి"); return; }
-        
+        if(!phone || !pickup || !drop || !fare) { alert("అన్ని వివరాలు నింపండి"); return; }
         localStorage.setItem('u-phone', phone);
-        document.getElementById('u-phone').disabled = true;
 
-        try {
-            await addDoc(collection(db, "rides"), {
-                userPhone: phone,
-                pickup: pickup,
-                drop: drop,
-                vehicleType: vehicle,
-                fare: parseInt(fare),
-                status: "pending",
-                timestamp: Date.now()
-            });
+        const docRef = await addDoc(collection(db, "rides"), {
+            userPhone: phone, pickup: pickup, drop: drop,
+            fare: parseInt(fare), status: "pending", timestamp: Date.now()
+        });
 
-            alert("✅ మీ రైడ్ బుకింగ్ అభ్యర్థన పంపబడింది!");
-            document.getElementById('pickup').value = "";
-            document.getElementById('drop').value = "";
-            document.getElementById('fare').value = "";
-        } catch (error) {
-            alert("సమస్య వచ్చింది: " + error.message);
-        }
+        document.getElementById('booking-card').style.display = 'none';
+        document.getElementById('status-area').innerHTML = `
+            <div class='status-box'>
+                <h3>రైడ్ పెండింగ్ లో ఉంది...</h3>
+                <p>డ్రైవర్ అంగీకరించే వరకు వేచి ఉండండి.</p>
+                <button class='btn' style='background:red' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
+            </div>`;
+    };
+
+    window.cancelRide = async (id) => {
+        await deleteDoc(doc(db, "rides", id));
+        alert("రైడ్ క్యాన్సిల్ చేయబడింది.");
+        location.reload();
     };
 </script>
 </body>
