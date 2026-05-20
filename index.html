@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride</title>
     
-    <!-- 🛺 మీ బైక్ ఐకాన్ మరియు మేనిఫెస్ట్ లింక్ -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
@@ -19,9 +18,12 @@
         label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
         .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; text-align: center; text-decoration: none; box-sizing: border-box; margin-top: 15px; }
-        .btn-change { background: #e67e22; color: white; padding: 5px 10px; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; float: right; margin-top: -30px; }
-        .driver-link { display: inline-block; margin-top: 20px; color: #2c3e50; font-weight: bold; text-decoration: none; padding: 10px; border: 2px solid #2c3e50; border-radius: 8px; background: white; }
-        .clear { clear: both; }
+        
+        /* 📱 నంబర్ మార్చు బటన్ స్టైల్స్ */
+        .profile-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-change { background: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        
+        .driver-link { display: inline-block; margin-top: 25px; color: #7f8c8d; font-weight: bold; text-decoration: none; padding: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -31,17 +33,18 @@
         <p style="margin:5px 0 0 0; opacity: 0.8;">గ్రామీణ ప్రాంతాల సురక్షిత ప్రయాణం</p>
     </div>
     
+    <!-- ప్రొఫైల్ కార్డ్ -->
     <div class="card">
-        <div style="width: 100%;">
-            <h3 style="display:inline-block;">📱 యూజర్ ప్రొఫైల్</h3>
+        <div class="profile-container">
+            <h3 style="margin:0;">📱 యూజర్ ప్రొఫైల్</h3>
             <button class="btn-change" onclick="window.enablePhoneEdit()">నంబర్ మార్చు</button>
         </div>
-        <div class="clear"></div>
         
         <label for="u-phone">మొబైల్ సంఖ్య:</label>
         <input type="tel" id="u-phone" placeholder="మీ 10 అంకెల ఫోన్ నంబర్" disabled>
     </div>
 
+    <!-- ప్రయాణ వివరాల కార్డ్ -->
     <div class="card">
         <h3>🛺 ప్రయాణ వివరాలు</h3>
         
@@ -63,7 +66,8 @@
         <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి ➔</button>
     </div>
 
-    <a href="driver.html" class="driver-link">👨‍✈️ కెప్టెన్ / డ్రైవర్ లాగిన్ పేజీ</a>
+    <!-- డ్రైవర్ లింక్ కింద చిన్నగా ఉంటుంది -->
+    <a href="driver.html" class="driver-link">👨‍✈️ డ్రైవర్ లాగిన్ పేజీకి వెళ్ళు</a>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -93,7 +97,7 @@
     window.enablePhoneEdit = () => {
         document.getElementById('u-phone').disabled = false;
         document.getElementById('u-phone').focus();
-        alert("ఇప్పుడు మీరు మొబైల్ నంబర్ మార్చుకోవచ్చు. మార్చిన తర్వాత రైడ్ బుక్ చేస్తే కొత్త నంబర్ సేవ్ అవుతుంది.");
+        alert("ఇప్పుడు బాక్సు ఓపెన్ అయింది, మొబైల్ నంబర్ మార్చుకోండి!");
     };
 
     window.bookRide = async () => {
@@ -120,7 +124,7 @@
                 timestamp: Date.now()
             });
 
-            alert("✅ మీ రైడ్ బుకింగ్ అభ్యర్థన పంపబడింది! డ్రైవర్ అంగీకరించే వరకు ఆగండి.");
+            alert("✅ మీ రైడ్ బుకింగ్ అభ్యర్థన పంపబడింది!");
             document.getElementById('pickup').value = "";
             document.getElementById('drop').value = "";
             document.getElementById('fare').value = "";
