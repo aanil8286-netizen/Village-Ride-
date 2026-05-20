@@ -63,7 +63,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     let myBalance = 0;
-    let rejectedRides = []; // రిజెక్ట్ చేసిన రైడ్ల ఐడీలను దాచుకోవడానికి
+    let rejectedRides = []; 
 
     const fields = ['d-phone', 'd-name', 'd-bike'];
     
@@ -107,9 +107,10 @@
         });
     };
 
-    // లైవ్ రైడ్స్ చూసే ఫంక్షన్
-    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
+    // లైవ్ రైడ్స్ (క్యాన్సల్ అలర్ట్ ఫీచర్ ఇక్కడ యాడ్ చేసాను)
+    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted", "cancelled"])), (snap) => {
         let html = "";
+        const myPhone = document.getElementById('d-phone').value;
         
         if (myBalance <= 0) {
             document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది. కొత్త రైడ్స్ కోసం వెంటనే రీఛార్జ్ చేయండి!</div>";
@@ -118,12 +119,21 @@
 
         snap.forEach(d => {
             const data = d.data();
-            const isAcc = data.status === "accepted";
             
-            // ఒకవేళ ఈ రైడ్‌ను డ్రైవర్ ఇప్పటికే రిజెక్ట్ చేసి ఉంటే చూపించదు
             if(rejectedRides.includes(d.id)) return;
 
-            if (data.status === "pending" || data.driverPhone === document.getElementById('d-phone').value) {
+            // ఒకవేళ ఈ డ్రైవర్ అంగీకరించిన రైడ్‌ను యూజర్ క్యాన్సల్ చేస్తే ఇక్కడ అలర్ట్ కార్డ్ కనిపిస్తుంది
+            if (data.status === "cancelled" && data.driverPhone === myPhone) {
+                html += `<div class="ride-card" style="border-left: 5px solid #e74c3c; background: #fdf2f2;">
+                    <p style="color: #e74c3c; font-weight: bold; margin: 0;">🚫 ఈ రైడ్ యూజర్ ద్వారా క్యాన్సల్ చేయబడింది!</p>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #555;">📍 ${data.pickup} నుండి ${data.drop}</p>
+                </div>`;
+                return;
+            }
+
+            // మామూలు పెండింగ్ మరియు యాక్సెప్ట్ అయిన రైడ్స్ లాజిక్
+            if (data.status === "pending" || data.driverPhone === myPhone) {
+                const isAcc = data.status === "accepted";
                 html += `<div class="ride-card" id="card-${d.id}">
                     <p>📍 <b>నుండి:</b> ${data.pickup} | 🏁 <b>కి:</b> ${data.drop}</p>
                     <p>💰 <b>ధర:</b> ₹${data.fare} | 📞 <b>యూజర్:</b> ${data.userPhone}</p>
@@ -137,12 +147,11 @@
         document.getElementById('rides-list').innerHTML = html || "కొత్త రైడ్స్ లేవు.";
     });
 
-    // రిజెక్ట్ చేసే లాజిక్
     window.rejectRide = (id) => {
         if(confirm("ఈ రైడ్ మీకు వద్దు అనుకుంటున్నారా?")) {
-            rejectedRides.push(id); // ఈ రైడ్ ఐడీని లిస్టులో వేస్తాం
+            rejectedRides.push(id);
             const element = document.getElementById(`card-${id}`);
-            if(element) element.remove(); // స్క్రీన్ పై నుండి వెంటనే తీసేస్తాం
+            if(element) element.remove();
         }
     };
 
@@ -153,7 +162,6 @@
 
         if(!phone || !name || !bike) { alert("వివరాలు నింపండి"); return; }
 
-        // డబుల్ బుకింగ్ కాకుండా లాక్ చేయడం
         const rideRef = doc(db, "rides", id);
         const rideSnap = await getDoc(rideRef);
 
@@ -185,11 +193,7 @@
         if(!amt || !phone || !name) { alert("వివరాలు నింపండి"); return; }
 
         await addDoc(collection(db, "recharge_requests"), {
-            driverName: name,
-            driverPhone: phone,
-            amount: parseInt(amt),
-            status: "pending",
-            timestamp: Date.now()
+            driverName: name, driverPhone: phone, amount: parseInt(amt), status: "pending", timestamp: Date.now()
         });
         alert("అభ్యర్థన పంపబడింది!");
         document.getElementById('recharge-amount').value = "";
@@ -197,3 +201,4 @@
 </script>
 </body>
 </html>
+
