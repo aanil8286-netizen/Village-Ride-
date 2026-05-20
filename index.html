@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Ride - పల్లె ప్రయాణం</title>
+    <title>Village Ride - පල්ලෙ ප්‍රවාහන</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 15px; text-align: center; }
         .header { background: #27ae60; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -106,7 +106,6 @@
         alert("రైడ్ బుక్ అయ్యింది!");
     };
 
-    // రైడ్ క్యాన్సల్ చేసే ఫంక్షన్
     window.cancelRide = async (rideId) => {
         if(confirm("మీరు నిజంగా రైడ్ క్యాన్సల్ చేయాలనుకుంటున్నారా?")) {
             await updateDoc(doc(db, "rides", rideId), { status: "cancelled" });
@@ -129,10 +128,13 @@
                     info.innerHTML = `<b>స్టేటస్:</b> డ్రైవర్ కోసం చూస్తున్నాము...<br>
                                     <button class="btn-cancel" onclick="window.cancelRide('${lastRide.id}')">❌ రైడ్ క్యాన్సల్ చేయి</button>`;
                 } else if(lastRide.status === 'accepted') {
+                    // ఇక్కడ డ్రైవర్ అంగీకరించిన తర్వాత కూడా క్యాన్సల్ బటన్ ని యాడ్ చేశాను
                     info.innerHTML = `
                         <b style="color:#27ae60;">✅ డ్రైవర్ అంగీకరించారు!</b><br>
                         🛺 <b>డ్రైవర్:</b> ${lastRide.driverName}<br>
-                        <a href="tel:${lastRide.driverPhone}" class="call-btn">📞 కాల్ చేయండి</a>
+                        🆔 <b>బండి:</b> ${lastRide.bikeNumber || '-'}<br>
+                        <a href="tel:${lastRide.driverPhone}" class="call-btn">📞 కాల్ చేయండి</a><br>
+                        <button class="btn-cancel" onclick="window.cancelRide('${lastRide.id}')">❌ రైడ్ క్యాన్సల్ చేయి</button>
                     `;
                 } else if(lastRide.status === 'cancelled') {
                     info.innerHTML = `<b style="color:#e74c3c;">🚫 రైడ్ క్యాన్సల్ చేయబడింది.</b>`;
