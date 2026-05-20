@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride - Captain</title>
     
-    <!-- 🛺 బైక్ ఐకాన్‌ను డైరెక్ట్ కోడింగ్ రూపంలో ఇచ్చాను (ఇది పక్కాగా వస్తుంది) -->
-    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAACp0lEQVR4nO2Xv2sUQRTHP7m7vbt7uT+ChbZp9A+wECwSg6CgYJr8gYVYptGksbYQLYIWisZGlCCChbYpLALBInZpLo3Gv8Ddk9w7i8Ums8m7vTebeTeTjw8W9mZ29jPf997MvNldSimllFJKKaWUUuq/YVpVaYFtwB7gAnAt8byv6gVwH7gInAL6qaVfAnuAn8An4GvG98eAn8AnYCbV6v6pBvSAt8At4I9mAdwB7gPhVEtXpAGXgXvAbeN3BtgHzgO9ZAvb/v8I9IDbwKaxvTfAMeAscHQqpc06g8C5wNbeWwK8b77L9AiwF7gY6N8O7ANOmWfGgWeBzZt6A7wCTgAnDOfb8AbYALw0z9wETgAnw9u7WvMBeALcbvjdAnw0ZbePAtgXfHeXwGfD7yPg7SgAbeC9IeAasK9E/EwZgCbwXpSInykD0GofZpWInylD8A5wM7y9Y4Zg6SgAbX/7/bZ8IAnYfN8BbgEPh7dPBGDBEHC57S8bAn7WvHfe8N9I6A9wZ8R3lw0B79r+siXgI3DRtPZzADwBbjf8bgu+uX0UwK7gO/XUAnwAnhuu9+AN8Dywbept6t/m+3S6pbtM1fSgVfSge9YCXgIHgXPh7T0HwIvA9m6PABfMcw/M/SGlXwN7KlsO97VsuajS93fX7bQvALvD6bTffP+9Yt/f3U7vDqdV98b36UfAL8N3DfgNfK3S9/ebYlP1YJ9WAp+NfT3D8b584LgZonZStYMe7NsGvE88X6p6ADxtYfNOfB/vpwUfPof29V66H+vT+gO8HGPzVv/mHPApY19P9vWk6gHwsVf30P6+FmPzXv821b0ZAbPAnV6N/W2mUkoppZRSSimllPoP+AM6bN9v8XonRAAAAABJRU5ErkJggg==">
-    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAACp0lEQVR4nO2Xv2sUQRTHP7m7vbt7uT+ChbZp9A+wECwSg6CgYJr8gYVYptGksbYQLYIWisZGlCCChbYpLALBInZpLo3Gv8Ddk9w7i8Ums8m7vTebeTeTjw8W9mZ29jPf997MvNldSimllFJKKaWUUuq/YVpVaYFtwB7gAnAt8byv6gVwH7gInAL6qaVfAnuAn8AnQXpSInykD0GofZpWInylD8A5wM7y9Y4Zg6SgAbX/7/bZ8IAnYfN8BbgEPh7dPBGDBEHC57S8bAn7WvHfe8N9I6A9wZ8R3lw0B79r+siXgI3DRtPZzADwBbjf8bgu+uX0UwK7gO/XUAnwAnhuu9+AN8Dywbept6t/m+3S6pbtM1fSgVfSge9YCXgIHgXPh7T0HwIvA9m6PABfMcw/M/SGlXwN7KlsO97VsuajS93fX7bQvALvD6bTffP+9Yt/f3U7vDqdV98b36UfAL8N3DfgNfK3S9/ebYlP1YJ9WAp+NfT3D8b584LgZonZStYMe7NsGvE88X6p6ADxtYfNOfB/vpwUfPof29V66H+vT+gO8HGPzVv/mHPApY19P9vWk6gHwsVf30P6+FmPzXv821b0ZAbPAnV6N/W2mUkoppZRSSimllPoP+AM6bN9v8XonRAAAAABJRU5ErkJggg==">
-    
-    <link rel="manifest" href="manifest.json">
+    <!-- 🛺 గిట్‌హబ్ ఫోల్డర్ లో బొమ్మ లేకపోయినా వచ్చేలా ఇంటర్నెట్ బైక్ ఐకాన్ లింక్ -->
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3063/3063198.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3063/3063198.png">
     <meta name="theme-color" content="#2c3e50">
 
     <style>
@@ -103,7 +101,6 @@
         });
     };
 
-    // లైవ్ రైడ్స్
     onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
         let html = "";
         const myPhone = document.getElementById('d-phone').value;
