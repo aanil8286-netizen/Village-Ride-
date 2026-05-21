@@ -96,22 +96,28 @@
             document.getElementById('low-balance-alert').style.display = (myBalance <= 0) ? 'block' : 'none';
         });
 
-        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone), where("timestamp", ">=", oneDayAgo)), (snap) => {
+        // హిస్టరీ లోడ్ కోడ్
+        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone)), (snap) => {
             let html = "";
-            snap.forEach(d => { html += `<div class="history-item">🏁 ${d.data().drop} | 💰 ₹${d.data().fare}</div>`; });
+            const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+            snap.forEach(d => { 
+                // కేవలం 24 గంటల లోపు వాటిని కోడింగ్ ద్వారా ఫిల్టర్ చేస్తున్నాం (ఇండెక్స్ అవసరం లేదు)
+                if(d.data().timestamp >= oneDayAgo) {
+                    html += `<div class="history-item">🏁 ${d.data().drop} | 💰 ₹${d.data().fare}</div>`; 
+                }
+            });
             document.getElementById('history-list').innerHTML = html || "రైడ్స్ లేవు.";
         });
     };
 
-    // 🚨 లైవ్ లిస్ట్ లో క్యాన్సిల్డ్ స్టేటస్‌ను కూడా వెతికేలా మార్చిన కోడ్
-    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted", "cancelled_by_user"]), where("timestamp", ">=", oneDayAgo)), (snap) => {
+    // 🚨 ఇండెక్స్ ఎర్రర్ రాకుండా కేవలం సింపుల్ క్వెరీ రాసి, కోడ్ లోపల 24 గంటల టైమ్ ఫిల్టర్ సెట్ చేసాను
+    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted", "cancelled_by_user"])), (snap) => {
         let html = "";
         const myPhone = document.getElementById('d-phone').value;
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
         
         if (myBalance <= 0) {
-            document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది!</div>";
+            document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది! రీఛార్జ్ చేయండి.</div>";
             return;
         }
 
@@ -120,12 +126,18 @@
             return;
         }
 
+        let hasRides = false;
+
         snap.forEach(d => {
             const data = d.data();
-            if(rejectedRides.includes(d.id)) return;
+            
+            // గడిచిన 24 గంటల్లో వచ్చిన రైడ్లను మాత్రమే లోపలికి రానిస్తుంది
+            if (!data.timestamp || data.timestamp < oneDayAgo) return;
+            if (rejectedRides.includes(d.id)) return;
 
-            // 1. ఒకవేళ యూజర్ క్యాన్సిల్ చేస్తే ఎరుపు రంగు బాక్స్ చూపిస్తుంది
+            // 1. యూజర్ క్యాన్సిల్ చేసిన రైడ్స్
             if (data.status === "cancelled_by_user" && (data.driverPhone === myPhone || !data.driverPhone)) {
+                hasRides = true;
                 html += `<div class="cancel-card">
                     <h3>❌ రైడ్ క్యాన్సిల్ చేయబడింది!</h3>
                     <p><b>యూజర్ ఫోన్:</b> ${data.userPhone}</p>
@@ -134,8 +146,9 @@
                     <button class="btn btn-ok" onclick="window.clearCancelledRide('${d.id}')">సరే (తీసివేయి)</button>
                 </div>`;
             }
-            // 2. మామూలు పెండింగ్ లేదా యాక్సెప్ట్ అయిన రైడ్స్
+            // 2. కొత్త పెండింగ్ లేదా డ్రైవర్ ఒప్పుకున్న రైడ్స్
             else if (data.status === "pending" || data.driverPhone === myPhone) {
+                hasRides = true;
                 const isAcc = data.status === "accepted";
                 html += `<div class="ride-card" id="card-${d.id}">
                     <p style="color:green; font-weight:bold; font-size:12px; margin:0 0 5px 0;">${data.status === 'pending' ? '⏳ కొత్త అభ్యర్థన' : '✅ మీరు ఒప్పుకున్న రైడ్'}</p>
@@ -148,10 +161,10 @@
                 </div>`;
             }
         });
-        document.getElementById('rides-list').innerHTML = html || "ప్రస్తుతం ఎటువంటి కొత్త రైడ్స్ లేవు.";
+
+        document.getElementById('rides-list').innerHTML = hasRides ? html : "ప్రస్తుతం ఎటువంటి కొత్త రైడ్స్ లేవు.";
     });
 
-    // డ్రైవర్ చూసాక ఆ క్యాన్సిల్ కార్డ్ ని స్క్రీన్ పై నుండి తీసేసే ఫంక్షన్
     window.clearCancelledRide = async (id) => {
         await deleteDoc(doc(db, "rides", id));
     };
