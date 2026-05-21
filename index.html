@@ -20,7 +20,8 @@
         .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; margin-top: 15px; }
         .btn-change { background: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
         .profile-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .status-box { background: #fff3cd; border: 2px solid #ffeeba; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: center; }
+        .status-box { background: #fff3cd; border: 2px solid #ffeeba; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
+        .success-box { background: #d4edda; border: 2px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
     </style>
 </head>
 <body>
@@ -29,7 +30,8 @@
         <h1 style="margin:0; font-size: 24px;">🏡 Village Ride</h1>
     </div>
     
-    <div class="card">
+    <!-- ప్రొఫైల్ కార్డ్ -->
+    <div class="card" id="profile-card">
         <div class="profile-container">
             <h3 style="margin:0;">📱 యూజర్ ప్రొఫైల్</h3>
             <button class="btn-change" onclick="document.getElementById('u-phone').disabled=false">నంబర్ మార్చు</button>
@@ -38,6 +40,7 @@
         <input type="tel" id="u-phone" disabled>
     </div>
 
+    <!-- బుకింగ్ కార్డ్ -->
     <div class="card" id="booking-card">
         <h3>🛺 ప్రయాణ వివరాలు</h3>
         <input type="text" id="pickup" placeholder="ఎక్కడ నుండి (Pickup)">
@@ -47,6 +50,7 @@
         <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి</button>
     </div>
 
+    <!-- లైవ్ స్టేటస్ కనిపించే ఏరియా -->
     <div id="status-area"></div>
 
 <script type="module">
@@ -70,28 +74,59 @@
         const pickup = document.getElementById('pickup').value;
         const drop = document.getElementById('drop').value;
         const fare = document.getElementById('fare').value;
+        const vehicle = document.getElementById('vehicle-type').value;
 
         if(!phone || !pickup || !drop || !fare) { alert("అన్ని వివరాలు నింపండి"); return; }
         localStorage.setItem('u-phone', phone);
+        document.getElementById('u-phone').disabled = true;
 
+        // 1. డేటాబేస్ లో రైడ్ సేవ్ చేస్తున్నాం
         const docRef = await addDoc(collection(db, "rides"), {
-            userPhone: phone, pickup: pickup, drop: drop,
+            userPhone: phone, pickup: pickup, drop: drop, vehicleType: vehicle,
             fare: parseInt(fare), status: "pending", timestamp: Date.now()
         });
 
+        // 2. బుకింగ్ ఫారమ్‌ను దాచేస్తున్నాం
         document.getElementById('booking-card').style.display = 'none';
-        document.getElementById('status-area').innerHTML = `
-            <div class='status-box'>
-                <h3>రైడ్ పెండింగ్ లో ఉంది...</h3>
-                <p>డ్రైవర్ అంగీకరించే వరకు వేచి ఉండండి.</p>
-                <button class='btn' style='background:red' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
-            </div>`;
+
+        // 3. డ్రైవర్ యాక్సెప్ట్ చేస్తున్నాడో లేదో లైవ్‌లో కనిపెట్టే కోడ్ (onSnapshot)
+        onSnapshot(doc(db, "rides", docRef.id), (snap) => {
+            if (!snap.exists()) return;
+            const data = snap.data();
+
+            if (data.status === "pending") {
+                document.getElementById('status-area').innerHTML = `
+                    <div class='status-box'>
+                        <h3 style='color: #856404; margin:0 0 10px 0;'>⏳ రైడ్ పెండింగ్ లో ఉంది...</h3>
+                        <p>డ్రైవర్ కోసం ఎదురుచూస్తున్నాము.</p>
+                        <button class='btn' style='background:red; width:100%;' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
+                    </div>`;
+            } 
+            else if (data.status === "accepted") {
+                document.getElementById('status-area').innerHTML = `
+                    <div class='success-box'>
+                        <h3 style='margin:0 0 10px 0;'>✅ డ్రైవర్ కన్ఫామ్ అయ్యారు!</h3>
+                        <p><b>👨‍✈️ డ్రైవర్ పేరు:</b> ${data.driverName || 'రాలేదు'}</p>
+                        <p><b>📞 ఫోన్ నంబర్:</b> ${data.driverPhone || 'రాలేదు'}</p>
+                        <p><b>🏍️ బండి నంబర్:</b> ${data.bikeNumber || 'రాలేదు'}</p>
+                        <hr style='border:1px solid #c3e6cb;'>
+                        <p style='font-size:14px; color:#155724;'>డ్రైవర్ మీకు ఫోన్ చేస్తారు, కాసేపు ఆగండి.</p>
+                        <button class='btn' style='background:red; width:100%; font-size:14px; padding:10px;' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
+                    </div>`;
+            }
+            else if (data.status === "completed") {
+                alert("🏁 మీ ప్రయాణం విజయవంతంగా పూర్తయింది!");
+                location.reload();
+            }
+        });
     };
 
     window.cancelRide = async (id) => {
-        await deleteDoc(doc(db, "rides", id));
-        alert("రైడ్ క్యాన్సిల్ చేయబడింది.");
-        location.reload();
+        if(confirm("ఈ రైడ్‌ను క్యాన్సిల్ చేయాలనుకుంటున్నారా?")) {
+            await deleteDoc(doc(db, "rides", id));
+            alert("రైడ్ క్యాన్సిల్ చేయబడింది.");
+            location.reload();
+        }
     };
 </script>
 </body>
