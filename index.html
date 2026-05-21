@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Village Ride</title>
-    
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
@@ -14,112 +13,101 @@
         body { font-family: sans-serif; background: #f4f4f4; padding: 15px; margin: 0; text-align: center; }
         .header { background: #2c3e50; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -15px -15px 20px -15px; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left; }
-        h3 { margin-top: 0; color: #2c3e50; }
-        label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; display: block; margin-top: 15px; }
-        .btn-change { background: #e67e22; color: white; padding: 8px 15px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
-        .profile-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .status-box { background: #fff3cd; border: 2px solid #ffeeba; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
-        .success-box { background: #d4edda; border: 2px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
+        .btn { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-call { background: #3498db; color: white; padding: 10px; border: none; border-radius: 8px; width: 100%; margin-top: 10px; text-decoration: none; display: block; text-align: center; font-weight: bold; }
+        .status-box { background: #fff3cd; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
+        .success-box { background: #d4edda; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1 style="margin:0; font-size: 24px;">🏡 Village Ride</h1>
-    </div>
+    <div class="header"><h1>🏡 Village Ride</h1></div>
     
-    <div class="card" id="profile-card">
-        <div class="profile-container">
-            <h3 style="margin:0;">📱 యూజర్ ప్రొఫైల్</h3>
-            <button class="btn-change" onclick="document.getElementById('u-phone').disabled=false">నంబర్ మార్చు</button>
-        </div>
-        <label>మొబైల్ సంఖ్య:</label>
-        <input type="tel" id="u-phone" disabled>
-    </div>
-
     <div class="card" id="booking-card">
         <h3>🛺 ప్రయాణ వివరాలు</h3>
-        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి (Pickup)">
-        <input type="text" id="drop" placeholder="ఎక్కడికి (Drop)">
-        <select id="vehicle-type"><option value="bike">🏍️ బైక్</option><option value="auto">🛺 ఆటో</option></select>
-        <input type="number" id="fare" placeholder="కిరాయి (Fare)">
+        <input type="tel" id="u-phone" placeholder="ఫోన్ నంబర్" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="pickup" placeholder="ఎక్కడ నుండి" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="text" id="drop" placeholder="ఎక్కడికి" style="width:100%; padding:10px; margin-bottom:10px;">
+        <input type="number" id="fare" placeholder="కిరాయి" style="width:100%; padding:10px;">
         <button class="btn" onclick="window.bookRide()">రైడ్ బుక్ చేయి</button>
     </div>
 
     <div id="status-area"></div>
 
+    <div class="card">
+        <h3>📜 మీ రైడ్ హిస్టరీ</h3>
+        <div id="history-list">లోడ్ అవుతోంది...</div>
+    </div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    const firebaseConfig = {
+    const db = getFirestore(initializeApp({
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
         authDomain: "village-ride-e139b.firebaseapp.com",
         projectId: "village-ride-e139b",
         appId: "1:869545503903:web:35efe840f51f382ecf86aa"
+    }));
+
+    window.onload = () => { 
+        document.getElementById('u-phone').value = localStorage.getItem('u-phone') || "";
+        loadHistory(); 
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.onload = () => { document.getElementById('u-phone').value = localStorage.getItem('u-phone') || ""; };
+    function loadHistory() {
+        const phone = localStorage.getItem('u-phone');
+        if(!phone) return;
+        onSnapshot(query(collection(db, "rides"), where("userPhone", "==", phone), orderBy("timestamp", "desc")), (snap) => {
+            let html = "";
+            snap.forEach(d => {
+                const data = d.data();
+                html += `<div class="history-item" style="padding:10px; border-bottom:1px solid #eee;">🏁 ${data.drop} | ₹${data.fare} | ${data.status}</div>`;
+            });
+            document.getElementById('history-list').innerHTML = html || "హిస్టరీ లేదు.";
+        });
+    }
 
     window.bookRide = async () => {
         const phone = document.getElementById('u-phone').value;
-        const pickup = document.getElementById('pickup').value;
-        const drop = document.getElementById('drop').value;
-        const fare = document.getElementById('fare').value;
-        const vehicle = document.getElementById('vehicle-type').value;
-
-        if(!phone || !pickup || !drop || !fare) { alert("అన్ని వివరాలు నింపండి"); return; }
-        localStorage.setItem('u-phone', phone);
-        document.getElementById('u-phone').disabled = true;
-
         const docRef = await addDoc(collection(db, "rides"), {
-            userPhone: phone, pickup: pickup, drop: drop, vehicleType: vehicle,
-            fare: parseInt(fare), status: "pending", timestamp: Date.now()
+            userPhone: phone, pickup: document.getElementById('pickup').value,
+            drop: document.getElementById('drop').value, fare: parseInt(document.getElementById('fare').value),
+            status: "pending", timestamp: Date.now()
         });
 
         document.getElementById('booking-card').style.display = 'none';
-
         onSnapshot(doc(db, "rides", docRef.id), (snap) => {
-            if (!snap.exists()) return;
             const data = snap.data();
-
+            if(!data) return;
             if (data.status === "pending") {
+                document.getElementById('status-area').innerHTML = `<div class='status-box'>⏳ పెండింగ్... <button class='btn' onclick='window.cancelRide("${docRef.id}")'>క్యాన్సిల్</button></div>`;
+            } else if (data.status === "accepted") {
                 document.getElementById('status-area').innerHTML = `
-                    <div class='status-box'>
-                        <h3 style='color: #856404; margin:0 0 10px 0;'>⏳ రైడ్ పెండింగ్ లో ఉంది...</h3>
-                        <p>డ్రైవర్ కోసం ఎదురుచూస్తున్నాము.</p>
-                        <button class='btn' style='background:red; width:100%;' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
-                    </div>`;
-            } 
-            else if (data.status === "accepted") {
+                    <div class='success-box'>✅ డ్రైవర్: ${data.driverName}<br>🏍️ బండి: ${data.bikeNumber}
+                    <a href="tel:${data.driverPhone}" class="btn-call">📞 డ్రైవర్ కి కాల్ చేయి</a>
+                    <button class='btn' style='background:red' onclick='window.cancelRide("${docRef.id}")'>క్యాన్సిల్</button></div>`;
+            } else if (data.status === "completed") {
                 document.getElementById('status-area').innerHTML = `
-                    <div class='success-box'>
-                        <h3 style='margin:0 0 10px 0;'>✅ డ్రైవర్ కన్ఫామ్ అయ్యారు!</h3>
-                        <p><b>👨‍✈️ పేరు:</b> ${data.driverName || 'రాలేదు'}</p>
-                        <p><b>📞 ఫోన్:</b> ${data.driverPhone || 'రాలేదు'}</p>
-                        <p><b>🏍️ బండి:</b> ${data.bikeNumber || 'రాలేదు'}</p>
-                        <button class='btn' style='background:red; width:100%;' onclick='window.cancelRide("${docRef.id}")'>రైడ్ క్యాన్సిల్ చేయి</button>
-                    </div>`;
-            }
-            else if (data.status === "completed") {
-                alert("🏁 రైడ్ పూర్తయింది!");
-                location.reload();
+                    <div class='card'><h3>⭐ రేటింగ్ ఇవ్వండి</h3>
+                    <select id="rating" style="width:100%; padding:10px;"><option value="5">⭐⭐⭐⭐⭐ బాగుంది</option><option value="3">⭐⭐⭐ ఓకే</option></select>
+                    <textarea id="feedback" placeholder="సలహా..." style="width:100%; padding:10px; margin:10px 0;"></textarea>
+                    <button class="btn" onclick="window.submitFeedback('${docRef.id}')">సబ్మిట్</button></div>`;
             }
         });
     };
 
-    // 🚨 డిలీట్ చేయకుండా స్టేటస్ మార్చే కొత్త ఫంక్షన్
+    window.submitFeedback = async (id) => {
+        await addDoc(collection(db, "admin_feedback"), {
+            rideId: id, rating: document.getElementById('rating').value,
+            feedback: document.getElementById('feedback').value, timestamp: Date.now()
+        });
+        alert("ధన్యవాదాలు!"); location.reload();
+    };
+
     window.cancelRide = async (id) => {
-        if(confirm("ఈ రైడ్‌ను క్యాన్సిల్ చేయాలనుకుంటున్నారా?")) {
-            await updateDoc(doc(db, "rides", id), { status: "cancelled_by_user" });
-            alert("రైడ్ క్యాన్సిల్ చేయబడింది.");
-            location.reload();
-        }
+        await updateDoc(doc(db, "rides", id), { status: "cancelled_by_user" });
+        location.reload();
     };
 </script>
 </body>
