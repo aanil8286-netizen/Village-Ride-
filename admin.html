@@ -3,31 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Village Ride - Admin</title>
+    <title>Village Ride - Admin Panel</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; text-align: center; }
-        .header { background: #2c3e50; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-        .card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; text-align: left; }
-        .btn-approve { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        body { font-family: sans-serif; background: #f4f6f9; margin: 0; padding: 15px; text-align: center; }
+        .header { background: #e74c3c; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: left; }
+        h2, h3 { margin-top: 0; color: #2c3e50; }
+        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-right: 5px; color: white; }
+        .btn-approve { background: #27ae60; }
+        .btn-reject { background: #7f8c8d; }
+        .driver-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* ⭐ రేటింగ్ కార్డ్స్ స్టైల్స్ */
+        .feedback-card { background: #fffde7; border-left: 5px solid #f1c40f; padding: 12px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stars { color: #f39c12; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>👑 అడ్మిన్ కంట్రోల్</h2>
-</div>
+    <div class="header">
+        <h1 style="margin:0; font-size: 24px;">⚙️ Village Ride - అడ్మిన్ ప్యానెల్</h1>
+    </div>
 
-<h3 style="text-align:left;">📥 రీఛార్జ్ అభ్యర్థనలు</h3>
-<div id="requests-list">చూస్తున్నాము...</div>
+    <!-- 💰 రీఛార్జ్ రిక్వెస్ట్‌ల సెక్షన్ -->
+    <div class="card">
+        <h3>🔌 డ్రైవర్ రీఛార్జ్ అభ్యర్థనలు</h3>
+        <div id="recharge-list">లోడ్ అవుతోంది...</div>
+    </div>
 
-<h3 style="text-align:left; margin-top:30px;">📊 డ్రైవర్ల వాలెట్ లిస్ట్</h3>
-<div id="drivers-status">లోడ్ అవుతోంది...</div>
+    <!-- 👨‍✈️ డ్రైవర్ల లిస్ట్ & బ్యాలెన్స్ సెక్షన్ -->
+    <div class="card">
+        <h3>👨‍✈️ డ్రైవర్ల బ్యాలెన్స్ వివరాలు</h3>
+        <div id="drivers-list">లోడ్ అవుతోంది...</div>
+    </div>
+
+    <!-- 🚨 కొత్తగా యాడ్ చేసిన యూజర్ రేటింగ్స్ & సలహాల సెక్షన్ -->
+    <div class="card">
+        <h3>⭐ యూజర్ రేటింగ్స్ & ఫీడ్‌బ్యాక్ (Suggestions)</h3>
+        <div id="admin-feedback-box">యూజర్ల సలహాలు ఇక్కడ లోడ్ అవుతాయి...</div>
+    </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    if(prompt("పాస్‌వర్డ్:") !== "456") window.location.href="about:blank";
+    // 🔒 సెక్యూరిటీ పాస్‌వర్డ్ చెకింగ్
+    if(prompt("అడ్మిన్ పాస్‌వర్డ్ ఇవ్వండి:") !== "456") window.location.href="about:blank";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAq3c99VFxiIEI_RCR66IS1rd5ay4R_hVQ",
@@ -39,58 +60,77 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 1. అభ్యర్థనలు చూపడం
-    onSnapshot(query(collection(db, "recharge_requests"), where("status", "==", "pending")), (snap) => {
+    // 1. రీఛార్జ్ రిక్వెస్ట్‌లు లోడ్ చేసే కోడ్
+    onSnapshot(collection(db, "recharge_requests"), (snap) => {
         let html = "";
         snap.forEach(d => {
             const data = d.data();
-            html += `<div class="card">
-                <div><b>${data.driverName || 'డ్రైవర్'}</b> (${data.driverPhone})<br>మొత్తం: ₹${data.amount}</div>
-                <button class="btn-approve" onclick="window.approveRequest('${d.id}', '${data.driverPhone}', ${data.amount})">అప్రూవ్</button>
-            </div>`;
+            if(data.status === "pending") {
+                html += `<div style="padding:10px; border-bottom:1px solid #eee;">
+                    <p><b>డ్రైవర్:</b> ${data.driverName} (${data.driverPhone})</p>
+                    <p><b>అమౌంట్:</b> ₹${data.amount}</p>
+                    <button class="btn btn-approve" onclick="window.approveRecharge('${d.id}', '${data.driverPhone}', ${data.amount})">ఆమోదించు (Approve)</button>
+                    <button class="btn btn-reject" onclick="window.rejectRecharge('${d.id}')">రిజెక్ట్</button>
+                </div>`;
+            }
         });
-        document.getElementById('requests-list').innerHTML = html || "కొత్త అభ్యర్థనలు లేవు.";
+        document.getElementById('recharge-list').innerHTML = html || "ఎటువంటి రీఛార్జ్ అభ్యర్థనలు లేవు.";
     });
 
-    // 2. డ్రైవర్ల లిస్ట్ చూపడం
+    window.approveRecharge = async (reqId, driverPhone, amt) => {
+        const dRef = doc(db, "drivers", driverPhone);
+        const dSnap = await getDoc(dRef);
+        let currentBalance = dSnap.exists() ? (dSnap.data().balance || 0) : 0;
+        
+        await updateDoc(dRef, { balance: currentBalance + amt });
+        await deleteDoc(doc(db, "recharge_requests", reqId));
+        alert("✅ రీఛార్జ్ విజయవంతంగా ఆమోదించబడింది!");
+    };
+
+    window.rejectRecharge = async (reqId) => {
+        if(confirm("ఈ రిక్వెస్ట్ రిజెక్ట్ చేయాలా?")) {
+            await deleteDoc(doc(db, "recharge_requests", reqId));
+        }
+    };
+
+    // 2. డ్రైవర్ల బ్యాలెన్స్ లిస్ట్ లోడ్ చేసే కోడ్
     onSnapshot(collection(db, "drivers"), (snap) => {
         let html = "";
         snap.forEach(d => {
-            html += `<div class="card" style="border-left:5px solid #2c3e50;">
-                <div>నంబర్: ${d.id}</div>
-                <div style="font-weight:bold;">₹${d.data().balance}</div>
+            const data = d.data();
+            html += `<div class="driver-item">
+                <div><b>${data.balance <= 0 ? '🔴' : '🟢'} ${data.name || d.id}</b> (${d.id})</div>
+                <div style="font-weight:bold; color:${data.balance <= 0 ? 'red' : 'green'};">₹${data.balance || 0}</div>
             </div>`;
         });
-        document.getElementById('drivers-status').innerHTML = html;
+        document.getElementById('drivers-list').innerHTML = html || "డ్రైవర్లు ఎవరూ లేరు.";
     });
 
-    // 3. అప్రూవ్ చేసే ఫంక్షన్ (ఇక్కడ ఎర్రర్ ఫిక్స్ చేశాను)
-    window.approveRequest = async (docId, phone, amount) => {
-        if(!confirm("₹" + amount + " అప్రూవ్ చేయమంటారా?")) return;
-        try {
-            const drRef = doc(db, "drivers", phone);
-            const drSnap = await getDoc(drRef);
-            
-            // పాత బ్యాలెన్స్ ఉంటే తీసుకుంటుంది, లేకపోతే 0 అనుకుంటుంది
-            let currentBal = 0;
-            if (drSnap.exists() && drSnap.data().balance !== undefined) {
-                currentBal = Number(drSnap.data().balance);
-            }
+    // 🚨 3. యూజర్ రేటింగ్స్ & ఫీడ్‌బ్యాక్ లైవ్‌లో లాగి చూపే సరికొత్త కోడ్
+    onSnapshot(collection(db, "admin_feedback"), (snap) => {
+        let html = "";
+        let feedbackArray = [];
+        
+        snap.forEach(doc => { feedbackArray.push({id: doc.id, ...doc.data()}); });
+        
+        // కొత్త రేటింగ్స్ అన్నింటికంటే పైకి వచ్చేలా టైమ్‌స్టాంప్ బట్టి సార్ట్ చేస్తున్నాం
+        feedbackArray.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-            // కొత్త బ్యాలెన్స్ లెక్కించడం
-            let newBal = currentBal + Number(amount);
+        feedbackArray.forEach(data => {
+            let starDisplay = "";
+            // నంబర్ బట్టి నక్షత్రాల బొమ్మలు తయారు చేస్తుంది
+            for(let i=0; i<parseInt(data.rating || 5); i++) { starDisplay += "⭐"; }
 
-            // setDoc తో merge:true వాడాను, కాబట్టి డాక్యుమెంట్ లేకపోయినా ఎర్రర్ రాదు, కొత్తగా క్రియేట్ అవుతుంది
-            await setDoc(drRef, { balance: newBal }, { merge: true });
-            
-            // రిక్వెస్ట్ స్టేటస్‌ను approved గా మార్చడం
-            await updateDoc(doc(db, "recharge_requests", docId), { status: "approved" });
-            
-            alert("రీఛార్జ్ విజయవంతంగా అప్రూవ్ చేయబడింది!");
-        } catch(e) { 
-            alert("ఎర్రర్ వచ్చింది: " + e.message); 
-        }
-    };
+            html += `<div class="feedback-card">
+                <p style="margin: 0 0 5px 0;"><b>📞 యూజర్ ఫోన్:</b> ${data.userPhone || 'N/A'}</p>
+                <p style="margin: 3px 0;"><span class="stars">${starDisplay}</span> (${data.rating} స్టార్స్)</p>
+                <p style="margin: 5px 0 0 0; background: rgba(0,0,0,0.03); padding: 8px; border-radius: 5px; color: #34495e;">
+                    <b>💬 సలహా/సజెషన్:</b> ${data.feedback || '<span style="color:grey; font-style:italic;">ఏమీ రాయలేదు</span>'}
+                </p>
+            </div>`;
+        });
+        document.getElementById('admin-feedback-box').innerHTML = html || "యూజర్ల నుండి ఇంకా ఎటువంటి రేటింగ్స్ రాలేదు.";
+    });
 </script>
 </body>
 </html>
