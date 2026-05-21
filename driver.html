@@ -14,11 +14,13 @@
         body { font-family: sans-serif; background: #f0f2f5; margin: 0; padding: 10px; text-align: center; }
         .wallet-card { background: #2c3e50; color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .ride-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: left; border-left: 5px solid #27ae60; }
+        .cancel-card { background: #fde8e8; border-left: 5px solid #e74c3c; padding: 15px; border-radius: 10px; margin-bottom: 10px; text-align: left; color: #9b1c1c; }
         .btn { padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-size: 15px; }
         .btn-acc { background: #27ae60; color: white; }
         .btn-rej { background: #7f8c8d; color: white; margin-top: 5px; }
         .btn-comp { background: #e74c3c; color: white; }
         .btn-recharge { background: #e67e22; color: white; margin-top: 5px; }
+        .btn-ok { background: #e74c3c; color: white; padding: 8px; font-size: 12px; }
         input { width: 90%; padding: 10px; margin: 8px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
         .history-item { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 5px; font-size: 14px; text-align: left; border-bottom: 1px solid #ddd; }
         #low-balance-alert { background: #ff7675; color: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; display: none; font-weight: bold; animation: blink 1.5s infinite; }
@@ -53,7 +55,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, updateDoc, query, where, addDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     if(prompt("పాస్‌వర్డ్ ఇవ్వండి:") !== "123") window.location.href="about:blank";
 
@@ -94,24 +96,25 @@
             document.getElementById('low-balance-alert').style.display = (myBalance <= 0) ? 'block' : 'none';
         });
 
-        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone)), (snap) => {
+        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+        onSnapshot(query(collection(db, "rides"), where("status", "==", "completed"), where("driverPhone", "==", phone), where("timestamp", ">=", oneDayAgo)), (snap) => {
             let html = "";
             snap.forEach(d => { html += `<div class="history-item">🏁 ${d.data().drop} | 💰 ₹${d.data().fare}</div>`; });
             document.getElementById('history-list').innerHTML = html || "రైడ్స్ లేవు.";
         });
     };
 
-    // 🚨 యూజర్ క్యాన్సిల్ చేస్తే డ్రైవర్ పేజీలో కూడా లైవ్‌లో అప్‌డేట్ అయ్యేలా మార్చిన మెయిన్ కోడ్
-    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted"])), (snap) => {
+    // 🚨 లైవ్ లిస్ట్ లో క్యాన్సిల్డ్ స్టేటస్‌ను కూడా వెతికేలా మార్చిన కోడ్
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    onSnapshot(query(collection(db, "rides"), where("status", "in", ["pending", "accepted", "cancelled_by_user"]), where("timestamp", ">=", oneDayAgo)), (snap) => {
         let html = "";
         const myPhone = document.getElementById('d-phone').value;
         
         if (myBalance <= 0) {
-            document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది. రీఛార్జ్ చేయండి!</div>";
+            document.getElementById('rides-list').innerHTML = "<div style='color:red; padding:20px; font-weight:bold;'>మీ బ్యాలెన్స్ ₹0 కి చేరింది!</div>";
             return;
         }
 
-        // ఒకవేళ డేటాబేస్ లో రైడ్స్ ఏవీ లేకపోతే లిస్ట్ ఖాళీ అవుతుంది
         if(snap.empty) {
             document.getElementById('rides-list').innerHTML = "ప్రస్తుతం ఎటువంటి కొత్త రైడ్స్ లేవు.";
             return;
@@ -121,10 +124,21 @@
             const data = d.data();
             if(rejectedRides.includes(d.id)) return;
 
-            if (data.status === "pending" || data.driverPhone === myPhone) {
+            // 1. ఒకవేళ యూజర్ క్యాన్సిల్ చేస్తే ఎరుపు రంగు బాక్స్ చూపిస్తుంది
+            if (data.status === "cancelled_by_user" && (data.driverPhone === myPhone || !data.driverPhone)) {
+                html += `<div class="cancel-card">
+                    <h3>❌ రైడ్ క్యాన్సిల్ చేయబడింది!</h3>
+                    <p><b>యూజర్ ఫోన్:</b> ${data.userPhone}</p>
+                    <p>📍 నుండి: ${data.pickup} | 🏁 కి: ${data.drop}</p>
+                    <p style="font-weight:bold; color:red;">⚠️ ఈ రైడ్‌ను యూజర్ క్యాన్సిల్ చేసేశారు.</p>
+                    <button class="btn btn-ok" onclick="window.clearCancelledRide('${d.id}')">సరే (తీసివేయి)</button>
+                </div>`;
+            }
+            // 2. మామూలు పెండింగ్ లేదా యాక్సెప్ట్ అయిన రైడ్స్
+            else if (data.status === "pending" || data.driverPhone === myPhone) {
                 const isAcc = data.status === "accepted";
                 html += `<div class="ride-card" id="card-${d.id}">
-                    <p style="color:red; font-weight:bold; font-size:12px; margin:0 0 5px 0;">${data.status === 'pending' ? '⏳ కొత్త అభ్యర్థన' : '✅ మీరు ఒప్పుకున్న రైడ్'}</p>
+                    <p style="color:green; font-weight:bold; font-size:12px; margin:0 0 5px 0;">${data.status === 'pending' ? '⏳ కొత్త అభ్యర్థన' : '✅ మీరు ఒప్పుకున్న రైడ్'}</p>
                     <p>📍 <b>నుండి:</b> ${data.pickup} | 🏁 <b>కి:</b> ${data.drop}</p>
                     <p>💰 <b>ధర:</b> ₹${data.fare} | 📞 <b>యూజర్:</b> ${data.userPhone}</p>
                     ${!isAcc ? 
@@ -136,6 +150,11 @@
         });
         document.getElementById('rides-list').innerHTML = html || "ప్రస్తుతం ఎటువంటి కొత్త రైడ్స్ లేవు.";
     });
+
+    // డ్రైవర్ చూసాక ఆ క్యాన్సిల్ కార్డ్ ని స్క్రీన్ పై నుండి తీసేసే ఫంక్షన్
+    window.clearCancelledRide = async (id) => {
+        await deleteDoc(doc(db, "rides", id));
+    };
 
     window.rejectRide = (id) => {
         if(confirm("ఈ రైడ్ మీకు వద్దు అనుకుంటున్నారా?")) {
@@ -155,9 +174,8 @@
         const rideRef = doc(db, "rides", id);
         const rideSnap = await getDoc(rideRef);
         
-        // ఒకవేళ డ్రైవర్ బటన్ నొక్కేలోపే యూజర్ క్యాన్సిల్ చేసేస్తే
-        if(!rideSnap.exists()) {
-            alert("⚠️ క్షమించండి! యూజర్ ఈ రైడ్‌ను ఇప్పటికే క్యాన్సిల్ చేసేశారు.");
+        if(!rideSnap.exists() || rideSnap.data().status === "cancelled_by_user") {
+            alert("⚠️ క్షమించండి! యూజర్ ఈ రైడ్‌ను ఆల్రెడీ క్యాన్సిల్ చేసేశారు.");
             return;
         }
 
